@@ -1,0 +1,7 @@
+[package]
+name = "oxide"
+version = "0.1.0"
+authors = ["Yang <jiangyangk@gmail.com>"]
+
+[dependencies]
+roaring = { git = "https://github.com/Nemo157/roaring-rs.git" }
