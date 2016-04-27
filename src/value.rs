@@ -4,7 +4,7 @@ use errs::Error;
 pub enum Value<'a> {
     UInt(usize),
     Boolean(bool),
-    Str(&'a str)
+    Str(&'a str),
 }
 
 pub struct ValueStore<'v> {

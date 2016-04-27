@@ -1,6 +1,6 @@
 use std::slice::Iter;
 
-use value::{Value};
+use value::Value;
 
 #[derive(Clone, Copy, Debug)]
 pub enum Match<'a> {
@@ -12,7 +12,7 @@ pub enum Match<'a> {
 
 #[derive(Debug)]
 pub struct MatchResults<'a, 'b: 'a> {
-    pub data: Vec<&'a [Value<'b>]>
+    pub data: Vec<&'a [Value<'b>]>,
 }
 
 impl<'a, 'b: 'a> MatchResults<'a, 'b> {

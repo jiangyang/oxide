@@ -9,8 +9,8 @@ use token::Token;
 use column::{Column, ColumnBuilder, ColumnRef};
 use value::{Value, ValueStore};
 use matches::{Match, MatchResults};
-use pattern::{Pattern};
-use index::{Index};
+use pattern::Pattern;
+use index::Index;
 
 pub struct Bucket<'b> {
     token: Token,
@@ -26,13 +26,15 @@ impl<'b> Bucket<'b> {
         if l == 0 {
             return Err(Error::NoColumn);
         }
-        let col_vec: Vec<Column> =  cols.into_iter().map(|cb| {
-            match cb {
-                ColumnBuilder::UInt => Column::UInt,
-                ColumnBuilder::Boolean => Column::Boolean,
-                ColumnBuilder::Str => Column::Str,
-            }
-        }).collect();
+        let col_vec: Vec<Column> = cols.into_iter()
+                                       .map(|cb| {
+                                           match cb {
+                                               ColumnBuilder::UInt => Column::UInt,
+                                               ColumnBuilder::Boolean => Column::Boolean,
+                                               ColumnBuilder::Str => Column::Str,
+                                           }
+                                       })
+                                       .collect();
         let mut b = Bucket {
             token: Token::new(),
             columns: col_vec,
@@ -65,9 +67,7 @@ impl<'b> Bucket<'b> {
             // println!("id {} is in the result", id);
             out.push(self.values.slice_at(id * w, id * w + w));
         }
-        MatchResults {
-            data: out
-        }
+        MatchResults { data: out }
     }
 
     pub fn delete_by_ids(&mut self, ids: &[usize]) -> usize {
@@ -90,12 +90,12 @@ impl<'b> Bucket<'b> {
             if let Some(t) = idx.get_matching_index(match_) {
                 indices_to_match.push(t);
             } else {
-                return Ok(None)
+                return Ok(None);
             }
         }
 
         if indices_to_match.len() == 0 {
-            return Ok(None)
+            return Ok(None);
         }
 
         indices_to_match.sort_by(|lhs, rhs| lhs.len().cmp(&rhs.len()));
@@ -106,11 +106,11 @@ impl<'b> Bucket<'b> {
 
         let mut init = indices_to_match[0].clone();
         let mut matches: RoaringBitmap<usize> = indices_to_match.iter()
-            .skip(1)
-            .fold(init, |acc, &i| acc & i);
+                                                                .skip(1)
+                                                                .fold(init, |acc, &i| acc & i);
         // println!("out length {}", matches.len());
         if matches.len() == 0 {
-            return Ok(None)
+            return Ok(None);
         }
         // for i in indices_to_match.iter() {
         //     println!("index has length {}", i.len());
@@ -134,23 +134,21 @@ impl<'b> Bucket<'b> {
             Some(ColumnRef {
                 id: col_num,
                 t: self.token,
-                r: &(self.columns[col_num])
+                r: &(self.columns[col_num]),
             })
         } else {
             None
         }
     }
 
-    fn find_pattern_internal<'a>(&self, pattern: &Pattern<'a>) -> Result<RoaringBitmap<usize>, Error> {
+    fn find_pattern_internal<'a>(&self,
+                                 pattern: &Pattern<'a>)
+                                 -> Result<RoaringBitmap<usize>, Error> {
         match *pattern {
             Pattern::Single(refcr, refm) => {
-                let &ColumnRef {
-                    id: col_id,
-                    t: token,
-                    r: refcol
-                } = refcr;
+                let &ColumnRef { id: col_id, t: token, r: refcol } = refcr;
                 if self.token != token || col_id >= self.columns.len() {
-                    return Err(Error::InvalidColumn)
+                    return Err(Error::InvalidColumn);
                 }
                 // should ref a column in this bucket
                 let mut found = false;
@@ -161,7 +159,7 @@ impl<'b> Bucket<'b> {
                     }
                 }
                 if !found {
-                    return Err(Error::InvalidColumn)
+                    return Err(Error::InvalidColumn);
                 }
                 // column and match type should match
                 try!(single_pattern_type_match(refcol, refm));
@@ -170,7 +168,7 @@ impl<'b> Bucket<'b> {
                 } else {
                     Ok(RoaringBitmap::new())
                 }
-            },
+            }
             Pattern::And(ref left, ref right) => {
                 match (self.find_pattern_internal(left), self.find_pattern_internal(right)) {
                     (Ok(bl), Ok(br)) => Ok(bl & br),
@@ -202,7 +200,7 @@ impl<'b> Bucket<'b> {
                 } else {
                     Ok(Some(out))
                 }
-            },
+            }
             Err(e) => Err(e),
         }
     }
@@ -260,20 +258,20 @@ fn single_pattern_type_match<'a>(refcol: &Column, refm: &Match<'a>) -> Result<()
         (&Column::UInt, &Match::UInt(_)) => Ok(()),
         (&Column::Boolean, &Match::Boolean(_)) => Ok(()),
         (&Column::Str, &Match::Str(_)) => Ok(()),
-        _ => Err(Error::InvalidColumnMatch)
+        _ => Err(Error::InvalidColumnMatch),
     }
 }
 
 pub struct BucketBuilder<'bb> {
     pub name: &'bb str,
-    pub columns: Vec<ColumnBuilder>
+    pub columns: Vec<ColumnBuilder>,
 }
 
 impl<'bb> BucketBuilder<'bb> {
     pub fn new(name: &'bb str) -> Self {
         BucketBuilder {
             name: name,
-            columns: Vec::new()
+            columns: Vec::new(),
         }
     }
 

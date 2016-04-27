@@ -5,15 +5,15 @@ use std::cmp::Eq;
 use std::hash::Hash;
 use std::collections::HashMap;
 
-use column::{Column};
-use value::{Value};
-use matches::{Match};
+use column::Column;
+use value::Value;
+use matches::Match;
 
 #[derive(Debug)]
 pub enum Index<'a> {
     UInt(HashMap<usize, RoaringBitmap<usize>>),
     Boolean(HashMap<bool, RoaringBitmap<usize>>),
-    Str(HashMap<&'a str, RoaringBitmap<usize>>)
+    Str(HashMap<&'a str, RoaringBitmap<usize>>),
 }
 
 impl<'a> Index<'a> {
@@ -32,19 +32,19 @@ impl<'a> Index<'a> {
                 if let Some(idx) = m.get_mut(&u) {
                     idx.insert(id);
                 }
-            },
+            }
             (&mut Index::Boolean(ref mut m), &Value::Boolean(tf)) => {
                 ensure_bitmap(m, tf);
                 if let Some(idx) = m.get_mut(&tf) {
                     idx.insert(id);
                 }
-            },
+            }
             (&mut Index::Str(ref mut m), &Value::Str(s)) => {
                 ensure_bitmap(m, s);
                 if let Some(idx) = m.get_mut(s) {
                     idx.insert(id);
                 }
-            },
+            }
             _ => unreachable!(),
         }
     }

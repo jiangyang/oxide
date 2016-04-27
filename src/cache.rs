@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 
 use errs::Error;
-use column::{ColumnRef};
-use value::{Value};
+use column::ColumnRef;
+use value::Value;
 use matches::{Match, MatchResults};
-use pattern::{Pattern};
+use pattern::Pattern;
 use bucket::{BucketBuilder, Bucket};
 
 pub struct CacheStats {
@@ -46,8 +46,8 @@ impl<'c> Cache<'c> {
             Ok(b) => {
                 self.buckets.insert(name, b);
                 Ok(())
-            },
-            Err(e) => Err(e)
+            }
+            Err(e) => Err(e),
         }
     }
 
@@ -99,7 +99,10 @@ impl<'c> Cache<'c> {
         }
     }
 
-    pub fn find_pattern<'a>(&self, bucket_name: &str, pattern: &Pattern<'a>) -> Result<Option<MatchResults>, Error> {
+    pub fn find_pattern<'a>(&self,
+                            bucket_name: &str,
+                            pattern: &Pattern<'a>)
+                            -> Result<Option<MatchResults>, Error> {
         if let Some(b) = self.buckets.get(bucket_name) {
             if let Ok(Some(ref ids)) = b.find_pattern(pattern) {
                 Ok(Some(b.get_by_ids(ids)))
@@ -111,7 +114,10 @@ impl<'c> Cache<'c> {
         }
     }
 
-    pub fn delete_pattern<'a>(&self, bucket_name: &str, pattern: &Pattern<'a>) -> Result<usize, Error> {
+    pub fn delete_pattern<'a>(&self,
+                              bucket_name: &str,
+                              pattern: &Pattern<'a>)
+                              -> Result<usize, Error> {
         unimplemented!()
     }
 }
