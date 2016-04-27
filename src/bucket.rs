@@ -5,11 +5,15 @@ use std::slice::IterMut;
 use std::cmp::Ordering;
 
 use errs::Error;
-use value::{Column, Value, ValueStore};
+use token::Token;
+use column::{Column, ColumnBuilder, ColumnRef};
+use value::{Value, ValueStore};
 use matches::{Match, MatchResults};
+use pattern::{Pattern};
 use index::{Index};
 
 pub struct Bucket<'b> {
+    token: Token,
     columns: Vec<Column>,
     indices: Vec<Index<'b>>,
     deleted: RoaringBitmap<usize>,
@@ -17,10 +21,21 @@ pub struct Bucket<'b> {
 }
 
 impl<'b> Bucket<'b> {
-    pub fn new(cols: Vec<Column>) -> Self {
+    pub fn new(cols: Vec<ColumnBuilder>) -> Result<Self, Error> {
         let l = cols.len();
+        if l == 0 {
+            return Err(Error::NoColumn);
+        }
+        let col_vec: Vec<Column> =  cols.into_iter().map(|cb| {
+            match cb {
+                ColumnBuilder::UInt => Column::UInt,
+                ColumnBuilder::Boolean => Column::Boolean,
+                ColumnBuilder::Str => Column::Str,
+            }
+        }).collect();
         let mut b = Bucket {
-            columns: cols,
+            token: Token::new(),
+            columns: col_vec,
             indices: Vec::new(),
             deleted: RoaringBitmap::new(),
             values: ValueStore::new(l),
@@ -28,7 +43,7 @@ impl<'b> Bucket<'b> {
         for col in &b.columns {
             b.indices.push(Index::new_by_column(col));
         }
-        b
+        Ok(b)
     }
 
     pub fn insert(&mut self, vals: Vec<Value<'b>>) -> Result<(), Error> {
@@ -64,8 +79,8 @@ impl<'b> Bucket<'b> {
         c
     }
 
-    pub fn match_simple<'a>(&self, pattern: &[Match<'a>]) -> Result<Option<Vec<usize>>, Error> {
-        try!(validate_find_pattern(&self.columns, pattern));
+    pub fn find<'a>(&self, pattern: &[Match<'a>]) -> Result<Option<Vec<usize>>, Error> {
+        try!(validate_find_simple_pattern(&self.columns, pattern));
         let mut indices_to_match: Vec<&RoaringBitmap<usize>> = Vec::new();
         for index_and_match in self.indices.iter().zip(pattern.iter()) {
             let (idx, match_) = index_and_match;
@@ -114,6 +129,84 @@ impl<'b> Bucket<'b> {
         }
     }
 
+    pub fn get_column_ref(&'b self, col_num: usize) -> Option<ColumnRef<'b>> {
+        if col_num < self.columns.len() {
+            Some(ColumnRef {
+                id: col_num,
+                t: self.token,
+                r: &(self.columns[col_num])
+            })
+        } else {
+            None
+        }
+    }
+
+    fn find_pattern_internal<'a>(&self, pattern: &Pattern<'a>) -> Result<RoaringBitmap<usize>, Error> {
+        match *pattern {
+            Pattern::Single(refcr, refm) => {
+                let &ColumnRef {
+                    id: col_id,
+                    t: token,
+                    r: refcol
+                } = refcr;
+                if self.token != token || col_id >= self.columns.len() {
+                    return Err(Error::InvalidColumn)
+                }
+                // should ref a column in this bucket
+                let mut found = false;
+                for refcol_ in self.columns.iter() {
+                    if refcol_ as *const Column == refcol as *const Column {
+                        found = true;
+                        break;
+                    }
+                }
+                if !found {
+                    return Err(Error::InvalidColumn)
+                }
+                // column and match type should match
+                try!(single_pattern_type_match(refcol, refm));
+                if let Some(b) = self.indices[col_id].get_matching_index(refm) {
+                    Ok(b.clone())
+                } else {
+                    Ok(RoaringBitmap::new())
+                }
+            },
+            Pattern::And(ref left, ref right) => {
+                match (self.find_pattern_internal(left), self.find_pattern_internal(right)) {
+                    (Ok(bl), Ok(br)) => Ok(bl & br),
+                    (Err(e), _) => Err(e),
+                    (_, Err(e)) => Err(e),
+                }
+            }
+            Pattern::Or(ref left, ref right) => {
+                match (self.find_pattern_internal(left), self.find_pattern_internal(right)) {
+                    (Ok(bl), Ok(br)) => Ok(bl | br),
+                    (Err(e), _) => Err(e),
+                    (_, Err(e)) => Err(e),
+                }
+            }
+        }
+    }
+
+    pub fn find_pattern<'a>(&self, pattern: &Pattern<'a>) -> Result<Option<Vec<usize>>, Error> {
+        match self.find_pattern_internal(pattern) {
+            Ok(b) => {
+                let mut out: Vec<usize> = Vec::new();
+                for id in b.iter() {
+                    if !self.deleted.contains(id) {
+                        out.push(id);
+                    }
+                }
+                if out.len() == 0 {
+                    Ok(None)
+                } else {
+                    Ok(Some(out))
+                }
+            },
+            Err(e) => Err(e),
+        }
+    }
+
     fn index_iter_mut<'c>(&'c mut self) -> IterMut<'c, Index<'b>> {
         self.indices.iter_mut()
     }
@@ -140,7 +233,7 @@ fn validate_insert_value(cols: &Vec<Column>, vals: &[Value]) -> Result<(), Error
     Ok(())
 }
 
-fn pattern_type_eq(l: &Column, r: &Match) -> bool {
+fn match_simple_type_eq(l: &Column, r: &Match) -> bool {
     match (l, r) {
         (&Column::UInt, &Match::UInt(_)) => true,
         (&Column::Boolean, &Match::Boolean(_)) => true,
@@ -150,21 +243,30 @@ fn pattern_type_eq(l: &Column, r: &Match) -> bool {
     }
 }
 
-fn validate_find_pattern(cols: &Vec<Column>, pattern: &[Match]) -> Result<(), Error> {
+fn validate_find_simple_pattern(cols: &Vec<Column>, pattern: &[Match]) -> Result<(), Error> {
     if cols.len() != pattern.len() {
         return Err(Error::WrongNumberOfMatches(cols.len(), pattern.len()));
     }
     for (i, col) in cols.iter().enumerate() {
-        if !pattern_type_eq(&col, &pattern[i]) {
+        if !match_simple_type_eq(&col, &pattern[i]) {
             return Err(Error::WrongMatchType(i));
         }
     }
     Ok(())
 }
 
+fn single_pattern_type_match<'a>(refcol: &Column, refm: &Match<'a>) -> Result<(), Error> {
+    match (refcol, refm) {
+        (&Column::UInt, &Match::UInt(_)) => Ok(()),
+        (&Column::Boolean, &Match::Boolean(_)) => Ok(()),
+        (&Column::Str, &Match::Str(_)) => Ok(()),
+        _ => Err(Error::InvalidColumnMatch)
+    }
+}
+
 pub struct BucketBuilder<'bb> {
     pub name: &'bb str,
-    pub columns: Vec<Column>
+    pub columns: Vec<ColumnBuilder>
 }
 
 impl<'bb> BucketBuilder<'bb> {
@@ -175,7 +277,7 @@ impl<'bb> BucketBuilder<'bb> {
         }
     }
 
-    pub fn add_column(mut self, col: Column) -> Self {
+    pub fn add_column(mut self, col: ColumnBuilder) -> Self {
         self.columns.push(col);
         self
     }

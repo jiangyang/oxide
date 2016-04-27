@@ -1,12 +1,5 @@
 use errs::Error;
 
-#[derive(Debug)]
-pub enum Column {
-    UInt,
-    Boolean,
-    Str,
-}
-
 #[derive(Clone, Copy, Debug)]
 pub enum Value<'a> {
     UInt(usize),

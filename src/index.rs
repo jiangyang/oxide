@@ -5,7 +5,8 @@ use std::cmp::Eq;
 use std::hash::Hash;
 use std::collections::HashMap;
 
-use value::{Column, Value};
+use column::{Column};
+use value::{Value};
 use matches::{Match};
 
 #[derive(Debug)]

@@ -6,10 +6,10 @@ fn main() {
     let mut c = oxide::Cache::new();
     {
         let mut bb = oxide::BucketBuilder::new("my_bucket");
-        bb = bb.add_column(oxide::Column::Boolean);
-        bb = bb.add_column(oxide::Column::UInt);
-        bb = bb.add_column(oxide::Column::Str);
-        c.new_bucket(bb)
+        bb = bb.add_column(oxide::ColumnBuilder::Boolean);
+        bb = bb.add_column(oxide::ColumnBuilder::UInt);
+        bb = bb.add_column(oxide::ColumnBuilder::Str);
+        c.new_bucket(bb).unwrap();
     };
 
     let mut s = "hi";

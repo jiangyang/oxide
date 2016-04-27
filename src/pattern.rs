@@ -1,15 +1,15 @@
-use value::{Column};
+use column::{ColumnRef};
 use matches::{Match};
 
 #[derive(Debug)]
 pub enum Pattern<'a> {
-    Single(&'a Column, &'a Match<'a>),
+    Single(&'a ColumnRef<'a>, &'a Match<'a>),
     And(Box<Pattern<'a>>, Box<Pattern<'a>>),
     Or(Box<Pattern<'a>>, Box<Pattern<'a>>)
 }
 
 impl<'a> Pattern<'a> {
-    pub fn new(refc: &'a Column, refm: &'a Match<'a>) -> Pattern<'a> {
+    pub fn new(refc: &'a ColumnRef<'a>, refm: &'a Match<'a>) -> Pattern<'a> {
         Pattern::Single(refc, refm)
     }
     
