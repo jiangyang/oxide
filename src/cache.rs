@@ -60,7 +60,7 @@ impl<'c> Cache<'c> {
         }
     }
 
-    pub fn insert_unique(&mut self, bucket_name: &str, vals: Vec<Value<'c>>) -> Result<(), Error> {
+    pub fn insert_unique(&mut self, bucket_name: &str, vals: Vec<Value<'c>>) -> Result<bool, Error> {
         unimplemented!()
     }
 
