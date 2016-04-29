@@ -2,12 +2,17 @@ extern crate roaring;
 use roaring::RoaringBitmap;
 
 use std::cmp::Eq;
-use std::hash::Hash;
 use std::collections::HashMap;
+use std::hash::Hash;
 
 use column::Column;
 use value::Value;
 use matches::Match;
+
+#[derive(Debug)]
+pub struct IndexStats {
+    pub cardinality: usize,
+}
 
 #[derive(Debug)]
 pub enum Index<'a> {
@@ -55,6 +60,17 @@ impl<'a> Index<'a> {
             (&Index::Boolean(ref m), &Match::Boolean(tf)) => m.get(&tf),
             (&Index::Str(ref m), &Match::Str(s)) => m.get(s),
             _ => unreachable!(),
+        }
+    }
+
+    pub fn stats(&self) -> IndexStats {
+        let c = match self {
+            &Index::UInt(ref m) => m.len(),
+            &Index::Boolean(ref m) => m.len(),
+            &Index::Str(ref m) => m.len(),
+        };
+        IndexStats {
+            cardinality: c,
         }
     }
 }

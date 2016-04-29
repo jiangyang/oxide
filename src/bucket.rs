@@ -12,7 +12,16 @@ use column::{Column, ColumnBuilder, ColumnRef};
 use value::{Value, ValueStore};
 use matches::{Match, MatchResults};
 use pattern::Pattern;
-use index::Index;
+use index::{Index, IndexStats};
+
+#[derive(Debug)]
+pub struct BucketStats {
+    pub columns: usize,
+    pub inserts: usize,
+    pub deletes: usize,
+    pub rows: usize,
+    pub index_stats: Vec<IndexStats>
+}
 
 pub struct Bucket<'b> {
     write_lock: Mutex<bool>,
@@ -21,6 +30,7 @@ pub struct Bucket<'b> {
     indices: Vec<Index<'b>>,
     deleted: RoaringBitmap<usize>,
     values: ValueStore<'b>,
+    stats: BucketStats,
 }
 
 impl<'b> Bucket<'b> {
@@ -45,11 +55,32 @@ impl<'b> Bucket<'b> {
             indices: Vec::new(),
             deleted: RoaringBitmap::new(),
             values: ValueStore::new(l),
+            stats: BucketStats {
+                columns: l,
+                inserts: 0,
+                deletes: 0,
+                rows: 0,
+                index_stats: Vec::new()
+            }
         };
         for col in &b.columns {
             b.indices.push(Index::new_by_column(col));
         }
         Ok(b)
+    }
+
+    pub fn stats(&self) -> BucketStats {
+        let mut is = Vec::<IndexStats>::new();
+        for i in self.indices.iter() {
+            is.push(i.stats());
+        }
+        BucketStats {
+            columns: self.stats.columns,
+            inserts: self.stats.inserts,
+            deletes: self.stats.deletes,
+            rows: self.stats.inserts - self.stats.deletes,
+            index_stats: is
+        }
     }
 
     pub fn write(&mut self) -> LockResult<MutexGuard<bool>> {
@@ -86,6 +117,7 @@ impl<'b> Bucket<'b> {
     fn insert(&mut self, vals: Vec<Value<'b>>) -> Result<(), Error> {
         try!(validate_insert_value(&self.columns, &vals));
         try!(self.values.insert(&vals));
+        self.stats.inserts += 1;
         let cur_id = self.values.next_id() - 1;
         for index_and_val in self.indices.iter_mut().zip(vals.iter()) {
             let (i, v) = index_and_val;
@@ -111,6 +143,7 @@ impl<'b> Bucket<'b> {
             self.deleted.insert(*id);
             c += 1;
         }
+        self.stats.deletes += c;
         c
     }
 

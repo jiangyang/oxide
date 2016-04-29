@@ -5,38 +5,45 @@ use column::ColumnRef;
 use value::Value;
 use matches::{Match, MatchResults};
 use pattern::Pattern;
-use bucket::{BucketBuilder, Bucket, ReadHandle, WriteHandle};
+use bucket::{BucketBuilder, Bucket, ReadHandle, WriteHandle, BucketStats};
 
+#[derive(Debug)]
 pub struct CacheStats {
-    buckets: usize,
+    buckets: HashMap<String, BucketStats>,
     columns: usize,
-    rows: usize,
     inserts: usize,
     deletes: usize,
+    rows: usize,
 }
 
 pub struct Cache<'c> {
     buckets: HashMap<&'c str, Bucket<'c>>,
-    stats: CacheStats,
 }
 
 impl<'c> Cache<'c> {
     pub fn new() -> Self {
         Cache {
             buckets: HashMap::new(),
-            stats: CacheStats {
-                buckets: 0,
-                columns: 0,
-                rows: 0,
-                inserts: 0,
-                deletes: 0,
-            },
         }
     }
 
-    pub fn stats(&mut self) -> &CacheStats {
-        // collect stats from buckets
-        &self.stats
+    pub fn stats(&self) -> CacheStats {
+        let mut s = CacheStats {
+            buckets: HashMap::new(),
+            columns: 0,
+            inserts: 0,
+            deletes: 0,
+            rows: 0
+        };
+        for (name, bucket) in self.buckets.iter() {
+            let bs = bucket.stats();
+            s.columns += bs.columns;
+            s.inserts += bs.inserts;
+            s.deletes += bs.deletes;
+            s.rows += bs.inserts - bs.deletes;
+            s.buckets.insert(name.to_string(), bs);
+        }
+        s
     }
 
     pub fn new_bucket(&mut self, bb: BucketBuilder<'c>) -> Result<(), Error> {
