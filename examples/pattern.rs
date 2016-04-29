@@ -43,23 +43,24 @@ fn main() {
 
         // borrow cache in the scope for pattern
         // because columnRef borrows the cache
-        {   
+        {
             let c1 = b.get_column_ref(0).unwrap();
             let c2 = b.get_column_ref(1).unwrap();
             let c3 = b.get_column_ref(2).unwrap();
-            
+
             let m1_1 = Match::Boolean(true);
             let m1_2 = Match::Boolean(false);
 
             let m2_1 = Match::UInt(1);
             let m2_2 = Match::UInt(2);
-            
+
             let m3 = Match::Str("hi");
-            
-            let my_pattern = Pattern::new(&c1, &m1_1).or(Pattern::new(&c1, &m1_2))
-                .and(Pattern::new(&c2, &m2_1).or(Pattern::new(&c2, &m2_2)))
-                .and(Pattern::new(&c3, &m3));
-                
+
+            let my_pattern = Pattern::new(&c1, &m1_1)
+                                 .or(Pattern::new(&c1, &m1_2))
+                                 .and(Pattern::new(&c2, &m2_1).or(Pattern::new(&c2, &m2_2)))
+                                 .and(Pattern::new(&c3, &m3));
+
             println!("{:?}", my_pattern);
 
             if let Some(res) = b.find_pattern(&my_pattern).unwrap() {
@@ -81,7 +82,7 @@ fn main() {
             println!("deleted {} rows", n);
         }
 
-        println!("now...{:?}" , b.find(&p));
+        println!("now...{:?}", b.find(&p));
 
     });
 }

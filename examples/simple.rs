@@ -74,7 +74,7 @@ fn main() {
     let p = vec![Match::Boolean(true), Match::Any, Match::Str("hi")];
     c.bucket(n, |r| {
         let b = r.unwrap();
-        
+
         if let Some(res) = b.find(&p).unwrap() {
             println!("result is empty ? {}", res.is_empty());
             println!("result length is {}", res.len());
@@ -98,6 +98,6 @@ fn main() {
             println!("deleted {} rows", n);
         }
 
-        println!("now...{:?}" , b.find(&p));
+        println!("now...{:?}", b.find(&p));
     });
 }
