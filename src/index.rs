@@ -16,6 +16,7 @@ pub struct IndexStats {
 
 #[derive(Debug)]
 pub enum Index<'a> {
+    // TODO: use FNV hasher for speed(https://crates.io/crates/fnv)
     UInt(HashMap<usize, RoaringBitmap<usize>>),
     Boolean(HashMap<bool, RoaringBitmap<usize>>),
     Str(HashMap<&'a str, RoaringBitmap<usize>>),
