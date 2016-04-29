@@ -14,7 +14,7 @@ pub use column::{ColumnBuilder};
 pub use value::{Value};
 pub use matches::Match;
 pub use pattern::Pattern;
-pub use bucket::BucketBuilder;
+pub use bucket::{BucketBuilder, ReadHandle, WriteHandle};
 pub use cache::Cache;
 
 #[cfg(test)]

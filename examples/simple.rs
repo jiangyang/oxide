@@ -12,50 +12,92 @@ fn main() {
         c.new_bucket(bb).unwrap();
     };
 
+    c.bucket("nope", |r| {
+        if let None = r {
+            println!("no such bucket nope!");
+            return;
+        }
+        println!("bucket nope exists!");
+    });
+
+    c.bucket_mut("nope", |w| {
+        if let None = w {
+            println!("no such bucket nope!");
+            return;
+        }
+        println!("bucket nope exists!");
+    });
+
+    let n = "my_bucket";
     let mut s = "hi";
+    c.bucket_mut(n, |w| {
+        let mut w = w.unwrap();
+        let vals = vec![Value::Boolean(true), Value::UInt(1), Value::Str(s)];
+        match w.insert(vals) {
+            Ok(_) => println!("inserted 1"),
+            Err(e) => println!("{:?}", e),
+        };
 
-    let vals = vec![Value::Boolean(true), Value::UInt(1), Value::Str(s)];
-    let r = c.insert("my_bucket", vals);
-    match r {
-        Ok(_) => println!("success!"),
-        Err(e) => println!("{:?}", e),
-    };
+        let vals = vec![Value::Boolean(false), Value::UInt(2), Value::Str(s)];
+        match w.insert(vals) {
+            Ok(_) => println!("inserted 2"),
+            Err(e) => println!("{:?}", e),
+        };
 
-    let vals = vec![Value::Boolean(false), Value::UInt(2), Value::Str(s)];
-    let r = c.insert("my_bucket", vals);
-    match r {
-        Ok(_) => println!("success!"),
-        Err(e) => println!("{:?}", e),
-    };
+        let m = vec![Match::Boolean(true), Match::Any, Match::Str("hi")];
+        if let Some(res) = w.find(&m).unwrap() {
+            println!("result is empty ? {}", res.is_empty());
+            println!("result length is {}", res.len());
 
-    s = "bye";
-    let vals = vec![Value::Boolean(true), Value::UInt(3), Value::Str(s)];
-    let r = c.insert("my_bucket", vals);
-    match r {
-        Ok(_) => println!("success!"),
-        Err(e) => println!("{:?}", e),
-    };
+            for r in res.iter() {
+                print!("row: ");
+                for f in r.iter() {
+                    print!(" {:?} ", f)
+                }
+                print!("\n");
+            }
+        } else {
+            println!("no match");
+        }
+        s = "bye";
+    });
+
+    c.bucket_mut(n, |w| {
+        let mut w = w.unwrap();
+        let vals = vec![Value::Boolean(true), Value::UInt(3), Value::Str(s)];
+        match w.insert(vals) {
+            Ok(_) => println!("inserted 3"),
+            Err(e) => println!("{:?}", e),
+        };
+    });
 
     let p = vec![Match::Boolean(true), Match::Any, Match::Str("hi")];
-    if let Some(res) = c.find("my_bucket", &p).unwrap() {
-        println!("result is empty ? {}", res.is_empty());
-        println!("result length is {}", res.len());
+    c.bucket(n, |r| {
+        let b = r.unwrap();
+        
+        if let Some(res) = b.find(&p).unwrap() {
+            println!("result is empty ? {}", res.is_empty());
+            println!("result length is {}", res.len());
 
-        for r in res.iter() {
-            print!("row: ");
-            for f in r.iter() {
-                print!(" {:?} ", f)
+            for r in res.iter() {
+                print!("row: ");
+                for f in r.iter() {
+                    print!(" {:?} ", f)
+                }
+                print!("\n");
             }
-            print!("\n");
+        } else {
+            println!("no match");
         }
-    } else {
-        println!("no match");
-    }
+    });
 
-    if let Ok(n) = c.delete("my_bucket", &p) {
-        println!("deleted {} rows", n);
-    }
+    c.bucket_mut(n, |w| {
+        let mut b = w.unwrap();
 
-    println!("now...{:?}" , c.find("my_bucket", &p));
+        if let Ok(n) = b.delete(&p) {
+            println!("deleted {} rows", n);
+        }
 
+        println!("now...{:?}" , b.find(&p));
+    });
 }

@@ -3,6 +3,7 @@ use roaring::RoaringBitmap;
 
 use std::slice::IterMut;
 use std::cmp::Ordering;
+use std::sync::{Mutex, LockResult, MutexGuard};
 
 use errs::Error;
 use token::Token;
@@ -13,6 +14,7 @@ use pattern::Pattern;
 use index::Index;
 
 pub struct Bucket<'b> {
+    write_lock: Mutex<bool>,
     token: Token,
     columns: Vec<Column>,
     indices: Vec<Index<'b>>,
@@ -36,6 +38,7 @@ impl<'b> Bucket<'b> {
                                        })
                                        .collect();
         let mut b = Bucket {
+            write_lock: Mutex::new(true),
             token: Token::new(),
             columns: col_vec,
             indices: Vec::new(),
@@ -48,7 +51,11 @@ impl<'b> Bucket<'b> {
         Ok(b)
     }
 
-    pub fn insert(&mut self, vals: Vec<Value<'b>>) -> Result<(), Error> {
+    pub fn write(&mut self) -> LockResult<MutexGuard<bool>> {
+        self.write_lock.lock()
+    }
+
+    fn insert(&mut self, vals: Vec<Value<'b>>) -> Result<(), Error> {
         try!(validate_insert_value(&self.columns, &vals));
         try!(self.values.insert(&vals));
         let cur_id = self.values.next_id() - 1;
@@ -59,7 +66,7 @@ impl<'b> Bucket<'b> {
         Ok(())
     }
 
-    pub fn get_by_ids(&self, ids: &[usize]) -> MatchResults {
+    fn get_by_ids(&self, ids: &[usize]) -> MatchResults {
         let mut out: Vec<&[Value]> = Vec::new();
         let w = self.values.width();
         // println!("row width is {}", w);
@@ -70,7 +77,7 @@ impl<'b> Bucket<'b> {
         MatchResults { data: out }
     }
 
-    pub fn delete_by_ids(&mut self, ids: &[usize]) -> usize {
+    fn delete_by_ids(&mut self, ids: &[usize]) -> usize {
         let mut c = 0_usize;
         for id in ids.iter() {
             self.deleted.insert(*id);
@@ -79,10 +86,10 @@ impl<'b> Bucket<'b> {
         c
     }
 
-    pub fn find<'a>(&self, pattern: &[Match<'a>]) -> Result<Option<Vec<usize>>, Error> {
-        try!(validate_find_simple_pattern(&self.columns, pattern));
+    fn find_id<'a>(&self, matches: &[Match<'a>]) -> Result<Option<Vec<usize>>, Error> {
+        try!(validate_find_simple_pattern(&self.columns, matches));
         let mut indices_to_match: Vec<&RoaringBitmap<usize>> = Vec::new();
-        for index_and_match in self.indices.iter().zip(pattern.iter()) {
+        for index_and_match in self.indices.iter().zip(matches.iter()) {
             let (idx, match_) = index_and_match;
             if let &Match::Any = match_ {
                 continue;
@@ -129,7 +136,23 @@ impl<'b> Bucket<'b> {
         }
     }
 
-    pub fn get_column_ref(&'b self, col_num: usize) -> Option<ColumnRef<'b>> {
+    fn find<'a>(&self, matches: &[Match<'a>]) -> Result<Option<MatchResults>, Error> {
+        if let Ok(Some(ref ids)) = self.find_id(matches) {
+            Ok(Some(self.get_by_ids(ids)))
+        } else {
+            Ok(None)
+        }
+    }
+
+    fn delete<'a>(&mut self, matches: &[Match<'a>]) -> Result<usize, Error> {
+        if let Ok(Some(ref ids)) = self.find_id(matches) {
+            Ok(self.delete_by_ids(ids))
+        } else {
+            Ok(0)
+        }
+    }
+
+    fn get_column_ref(&'b self, col_num: usize) -> Option<ColumnRef<'b>> {
         if col_num < self.columns.len() {
             Some(ColumnRef {
                 id: col_num,
@@ -186,7 +209,7 @@ impl<'b> Bucket<'b> {
         }
     }
 
-    pub fn find_pattern<'a>(&self, pattern: &Pattern<'a>) -> Result<Option<Vec<usize>>, Error> {
+    fn find_pattern<'a>(&self, pattern: &Pattern<'a>) -> Result<Option<Vec<usize>>, Error> {
         match self.find_pattern_internal(pattern) {
             Ok(b) => {
                 let mut out: Vec<usize> = Vec::new();
@@ -260,6 +283,55 @@ fn single_pattern_type_match<'a>(refcol: &Column, refm: &Match<'a>) -> Result<()
         (&Column::Str, &Match::Str(_)) => Ok(()),
         _ => Err(Error::InvalidColumnMatch),
     }
+}
+
+pub struct ReadHandle<'a, 'b: 'a> {
+    b: &'a Bucket<'b>,
+}
+
+impl<'a, 'b: 'a> ReadHandle<'a, 'b> {
+    pub fn new(refb: &'a Bucket<'b>) -> Self {
+        ReadHandle { b: refb }
+    } 
+
+    pub fn find<'c>(&self, matches: &[Match<'c>]) -> Result<Option<MatchResults>, Error> {
+        self.b.find(matches)
+    }
+
+    pub fn find_pattern<'c>(&self, pattern: &Pattern<'c>) -> Result<Option<MatchResults>, Error> {
+        match self.b.find_pattern(pattern) {
+            Ok(Some(ref ids)) => Ok(Some(self.b.get_by_ids(ids))),
+            _ => Ok(None),
+        }
+    }
+}
+
+pub struct WriteHandle<'a, 'b: 'a> {
+    b: &'a mut Bucket<'b>,
+}
+
+impl<'a, 'b: 'a> WriteHandle<'a, 'b> {
+    pub fn new(refb: &'a mut Bucket<'b>) -> Self {
+        WriteHandle { b: refb }
+    } 
+
+    pub fn find<'c>(&self, matches: &[Match<'c>]) -> Result<Option<MatchResults>, Error> {
+        self.b.find(matches)
+    }
+
+    pub fn insert(&mut self, vals: Vec<Value<'b>>) -> Result<(), Error> {
+        self.b.insert(vals)
+    }
+    
+    pub fn delete<'c>(&mut self, matches: &[Match<'c>]) -> Result<usize, Error> {
+        self.b.delete(matches)
+    }
+
+    // pub fn delete_pattern<'a>(&self,
+    //                           pattern: &Pattern<'a>)
+    //                           -> Result<usize, Error> {
+    //     unimplemented!()
+    // }
 }
 
 pub struct BucketBuilder<'bb> {

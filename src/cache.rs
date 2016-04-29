@@ -5,7 +5,7 @@ use column::ColumnRef;
 use value::Value;
 use matches::{Match, MatchResults};
 use pattern::Pattern;
-use bucket::{BucketBuilder, Bucket};
+use bucket::{BucketBuilder, Bucket, ReadHandle, WriteHandle};
 
 pub struct CacheStats {
     buckets: usize,
@@ -51,73 +51,20 @@ impl<'c> Cache<'c> {
         }
     }
 
-    pub fn insert(&mut self, bucket_name: &str, vals: Vec<Value<'c>>) -> Result<(), Error> {
-        if let Some(b) = self.buckets.get_mut(bucket_name) {
-            try!(b.insert(vals));
-            Ok(())
-        } else {
-            Err(Error::InvalidBucket)
+    pub fn bucket<F>(&self, bucket_name: &str, closure: F) where F: FnOnce(Option<ReadHandle>) {
+        match self.buckets.get(bucket_name) {
+            Some(b) => closure(Some(ReadHandle::new(b))),
+            _ => closure(None),
         }
     }
 
-    pub fn insert_unique(&mut self, bucket_name: &str, vals: Vec<Value<'c>>) -> Result<bool, Error> {
-        unimplemented!()
-    }
-
-    pub fn get_column_ref(&'c self, bucket_name: &str, column_num: usize) -> Option<ColumnRef<'c>> {
-        if let Some(b) = self.buckets.get(bucket_name) {
-            b.get_column_ref(column_num)
-        } else {
-            None
+    pub fn bucket_mut<F>(&mut self, bucket_name: &str, closure: F) where F: FnOnce(Option<WriteHandle>) {
+        match self.buckets.get_mut(bucket_name) {
+            Some(b) => {
+                b.write().unwrap();
+                closure(Some(WriteHandle::new(b)))
+            },
+            _ => closure(None),
         }
-    }
-
-    pub fn find<'a>(&self,
-                    bucket_name: &str,
-                    pattern: &[Match<'a>])
-                    -> Result<Option<MatchResults>, Error> {
-        if let Some(b) = self.buckets.get(bucket_name) {
-            if let Ok(Some(ref ids)) = b.find(pattern) {
-                Ok(Some(b.get_by_ids(ids)))
-            } else {
-                Ok(None)
-            }
-        } else {
-            Err(Error::InvalidBucket)
-        }
-    }
-
-    pub fn delete<'a>(&mut self, bucket_name: &str, pattern: &[Match<'a>]) -> Result<usize, Error> {
-        if let Some(b) = self.buckets.get_mut(bucket_name) {
-            if let Ok(Some(ref ids)) = b.find(pattern) {
-                Ok(b.delete_by_ids(ids))
-            } else {
-                Ok(0)
-            }
-        } else {
-            Err(Error::InvalidBucket)
-        }
-    }
-
-    pub fn find_pattern<'a>(&self,
-                            bucket_name: &str,
-                            pattern: &Pattern<'a>)
-                            -> Result<Option<MatchResults>, Error> {
-        if let Some(b) = self.buckets.get(bucket_name) {
-            if let Ok(Some(ref ids)) = b.find_pattern(pattern) {
-                Ok(Some(b.get_by_ids(ids)))
-            } else {
-                Ok(None)
-            }
-        } else {
-            Err(Error::InvalidBucket)
-        }
-    }
-
-    pub fn delete_pattern<'a>(&self,
-                              bucket_name: &str,
-                              pattern: &Pattern<'a>)
-                              -> Result<usize, Error> {
-        unimplemented!()
     }
 }
