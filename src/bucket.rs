@@ -255,7 +255,7 @@ impl<'b> Bucket<'b> {
             Pattern::Single(refcr, refv) => {
                 let &ColumnRef { id: col_id, t: token, r: refcol } = refcr;
                 if self.token != token || col_id >= self.columns.len() {
-                    return Err(Error::InvalidColumn);
+                    return Err(Error::InvalidColumnRef);
                 }
                 // should ref a column in this bucket
                 let mut found = false;
@@ -266,7 +266,7 @@ impl<'b> Bucket<'b> {
                     }
                 }
                 if !found {
-                    return Err(Error::InvalidColumn);
+                    return Err(Error::InvalidColumnRef);
                 }
                 // column and match type should match
                 try!(single_pattern_type_match(refcol, refv));

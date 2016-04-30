@@ -16,13 +16,3 @@ pub use matches::Match;
 pub use pattern::Pattern;
 pub use bucket::{BucketBuilder, ReadHandle, WriteHandle};
 pub use cache::Cache;
-
-#[cfg(test)]
-mod test {
-    use super::bucket;
-
-    #[test]
-    fn it_works() {
-        println!("yes!");
-    }
-}
