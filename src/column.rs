@@ -3,15 +3,19 @@ use token::Token;
 #[derive(Debug)]
 pub enum Column {
     UInt,
+    Int,
     Boolean,
     Str,
+    OwnedStr,
 }
 
 #[derive(Debug)]
 pub enum ColumnBuilder {
     UInt,
+    Int,
     Boolean,
     Str,
+    OwnedStr,
 }
 
 #[derive(Debug)]

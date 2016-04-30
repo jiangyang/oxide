@@ -1,7 +1,6 @@
 extern crate roaring;
 use roaring::RoaringBitmap;
 
-use std::cmp::Ordering;
 use std::ops::Deref;
 use std::slice::IterMut;
 use std::sync::{Mutex, LockResult, MutexGuard};
@@ -43,8 +42,10 @@ impl<'b> Bucket<'b> {
                                        .map(|cb| {
                                            match cb {
                                                ColumnBuilder::UInt => Column::UInt,
+                                               ColumnBuilder::Int => Column::Int,
                                                ColumnBuilder::Boolean => Column::Boolean,
                                                ColumnBuilder::Str => Column::Str,
+                                               ColumnBuilder::OwnedStr => Column::OwnedStr,
                                            }
                                        })
                                        .collect();
@@ -110,6 +111,7 @@ impl<'b> Bucket<'b> {
     pub fn find_pattern<'c>(&self, pattern: &Pattern<'c>) -> Result<Option<MatchResults>, Error> {
         match self.find_pattern_internal(pattern) {
             Ok(Some(ref ids)) => Ok(Some(self.get_by_ids(ids))),
+            Err(e) => Err(e),
             _ => Ok(None),
         }
     }
@@ -172,8 +174,8 @@ impl<'b> Bucket<'b> {
         //     println!("index has length {}", i.len());
         // }
 
-        let mut init = indices_to_match[0].clone();
-        let mut matches: RoaringBitmap<usize> = indices_to_match.iter()
+        let init = indices_to_match[0].clone();
+        let matches: RoaringBitmap<usize> = indices_to_match.iter()
                                                                 .skip(1)
                                                                 .fold(init, |acc, &i| acc & i);
         // println!("out length {}", matches.len());
@@ -277,8 +279,10 @@ impl<'b> Bucket<'b> {
 fn value_type_eq(l: &Column, r: &Value) -> bool {
     match (l, r) {
         (&Column::UInt, &Value::UInt(_)) => true,
+        (&Column::Int, &Value::Int(_)) => true,
         (&Column::Boolean, &Value::Boolean(_)) => true,
         (&Column::Str, &Value::Str(_)) => true,
+        (&Column::OwnedStr, &Value::OwnedStr(_)) => true,
         _ => false,
     }
 }
@@ -298,8 +302,10 @@ fn validate_insert_value(cols: &Vec<Column>, vals: &[Value]) -> Result<(), Error
 fn match_simple_type_eq(l: &Column, r: &Match) -> bool {
     match (l, r) {
         (&Column::UInt, &Match::UInt(_)) => true,
+        (&Column::Int, &Match::Int(_)) => true,
         (&Column::Boolean, &Match::Boolean(_)) => true,
         (&Column::Str, &Match::Str(_)) => true,
+        (&Column::OwnedStr, &Match::OwnedStr(_)) => true,
         (_, &Match::Any) => true,
         _ => false,
     }
@@ -320,8 +326,10 @@ fn validate_find_simple_pattern(cols: &Vec<Column>, pattern: &[Match]) -> Result
 fn single_pattern_type_match<'a>(refcol: &Column, refm: &Match<'a>) -> Result<(), Error> {
     match (refcol, refm) {
         (&Column::UInt, &Match::UInt(_)) => Ok(()),
+        (&Column::Int, &Match::Int(_)) => Ok(()),
         (&Column::Boolean, &Match::Boolean(_)) => Ok(()),
         (&Column::Str, &Match::Str(_)) => Ok(()),
+        (&Column::OwnedStr, &Match::OwnedStr(_)) => Ok(()),
         _ => Err(Error::InvalidColumnMatch),
     }
 }

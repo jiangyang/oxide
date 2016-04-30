@@ -1,10 +1,12 @@
 use errs::Error;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub enum Value<'a> {
     UInt(usize),
+    Int(isize),
     Boolean(bool),
     Str(&'a str),
+    OwnedStr(String),
 }
 
 pub struct ValueStore<'v> {
@@ -35,7 +37,7 @@ impl<'v> ValueStore<'v> {
     }
 
     pub fn insert(&mut self, vals: &Vec<Value<'v>>) -> Result<(), Error> {
-        self.vals.extend(vals);
+        self.vals.extend(vals.iter().cloned());
         self.next_id += 1;
         Ok(())
     }

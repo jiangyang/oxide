@@ -12,6 +12,8 @@ fn main() {
         bb = bb.add_column(ColumnBuilder::Boolean);
         bb = bb.add_column(ColumnBuilder::UInt);
         bb = bb.add_column(ColumnBuilder::Str);
+        bb = bb.add_column(ColumnBuilder::OwnedStr);
+        bb = bb.add_column(ColumnBuilder::Int);
         c.new_bucket(bb).unwrap();
     };
 
@@ -19,14 +21,26 @@ fn main() {
     c.bucket_mut(n, |b| {
         let mut b = b.unwrap();
 
-        let vals = vec![Value::Boolean(true), Value::UInt(1), Value::Str(s)];
+        let vals = vec![
+            Value::Boolean(true),
+            Value::UInt(1),
+            Value::Str(s),
+            Value::OwnedStr(s.to_owned()),
+            Value::Int(99)
+        ];
         let r = b.insert(vals);
         match r {
             Ok(_) => println!("inserted 1"),
             Err(e) => println!("{:?}", e),
         };
 
-        let vals = vec![Value::Boolean(false), Value::UInt(2), Value::Str(s)];
+        let vals = vec![
+            Value::Boolean(false),
+            Value::UInt(2),
+            Value::Str(s),
+            Value::OwnedStr(s.to_owned()),
+            Value::Int(-99)
+        ];
         let r = b.insert(vals);
         match r {
             Ok(_) => println!("inserted 2"),
@@ -34,7 +48,13 @@ fn main() {
         };
 
         s = "bye";
-        let vals = vec![Value::Boolean(true), Value::UInt(3), Value::Str(s)];
+        let vals = vec![
+            Value::Boolean(true),
+            Value::UInt(3),
+            Value::Str(s),
+            Value::OwnedStr(s.to_owned()),
+            Value::Int(-100)
+        ];
         let r = b.insert(vals);
         match r {
             Ok(_) => println!("inserted 3"),
@@ -47,6 +67,8 @@ fn main() {
             let c1 = b.get_column_ref(0).unwrap();
             let c2 = b.get_column_ref(1).unwrap();
             let c3 = b.get_column_ref(2).unwrap();
+            let c4 = b.get_column_ref(3).unwrap();
+            let c5 = b.get_column_ref(4).unwrap();
 
             let m1_1 = Match::Boolean(true);
             let m1_2 = Match::Boolean(false);
@@ -56,12 +78,24 @@ fn main() {
 
             let m3 = Match::Str("hi");
 
-            let my_pattern = Pattern::new(&c1, &m1_1)
-                                 .or(Pattern::new(&c1, &m1_2))
+            // let m4 = Match::OwnedStr("hi".to_owned());
+            let m4 = Match::Any;
+
+            let m5_1 = Match::Int(-99);
+            let m5_2 = Match::Int(99);
+
+            let my_pattern = (Pattern::new(&c1, &m1_1).or(Pattern::new(&c1, &m1_2)))
                                  .and(Pattern::new(&c2, &m2_1).or(Pattern::new(&c2, &m2_2)))
-                                 .and(Pattern::new(&c3, &m3));
+                                 .and(Pattern::new(&c3, &m3))
+                                 // TODO: better design to avoid this?
+                                 // .and(Pattern::new(&c4, &m4))
+                                 .and(Pattern::new(&c5, &m5_1).or(Pattern::new(&c5, &m5_2)));
 
             println!("{:?}", my_pattern);
+
+            let x = b.find_pattern(&my_pattern);
+
+            println!("{:?}", x);
 
             if let Some(res) = b.find_pattern(&my_pattern).unwrap() {
                 println!("result is empty ? {}", res.is_empty());
@@ -76,13 +110,5 @@ fn main() {
                 }
             }
         }
-
-        let p = vec![Match::Boolean(true), Match::Any, Match::Str("hi")];
-        if let Ok(n) = b.delete(&p) {
-            println!("deleted {} rows", n);
-        }
-
-        println!("now...{:?}", b.find(&p));
-
     });
 }

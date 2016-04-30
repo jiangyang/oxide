@@ -2,11 +2,13 @@ use std::slice::Iter;
 
 use value::Value;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub enum Match<'a> {
     UInt(usize),
+    Int(isize),
     Boolean(bool),
     Str(&'a str),
+    OwnedStr(String),
     Any,
 }
 

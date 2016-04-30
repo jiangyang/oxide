@@ -1,10 +1,7 @@
 use std::collections::HashMap;
 
 use errs::Error;
-use column::ColumnRef;
-use value::Value;
-use matches::{Match, MatchResults};
-use pattern::Pattern;
+use matches::{MatchResults};
 use bucket::{BucketBuilder, Bucket, ReadHandle, WriteHandle, BucketStats};
 
 #[derive(Debug)]
