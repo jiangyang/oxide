@@ -19,7 +19,7 @@ pub struct BucketStats {
     pub inserts: usize,
     pub deletes: usize,
     pub rows: usize,
-    pub index_stats: Vec<IndexStats>
+    pub index_stats: Vec<IndexStats>,
 }
 
 pub struct Bucket<'b> {
@@ -61,8 +61,8 @@ impl<'b> Bucket<'b> {
                 inserts: 0,
                 deletes: 0,
                 rows: 0,
-                index_stats: Vec::new()
-            }
+                index_stats: Vec::new(),
+            },
         };
         for col in &b.columns {
             b.indices.push(Index::new_by_column(col));
@@ -80,7 +80,7 @@ impl<'b> Bucket<'b> {
             inserts: self.stats.inserts,
             deletes: self.stats.deletes,
             rows: self.stats.inserts - self.stats.deletes,
-            index_stats: is
+            index_stats: is,
         }
     }
 
@@ -128,6 +128,33 @@ impl<'b> Bucket<'b> {
         Ok(())
     }
 
+    fn insert_unique(&mut self, vals: Vec<Value<'b>>) -> Result<bool, Error> {
+        try!(validate_insert_value(&self.columns, &vals));
+        let ms: Vec<Match> = vals.iter()
+                                 .map(|v| {
+                                     match *v {
+                                         Value::UInt(u) => Match::UInt(u),
+                                         Value::Int(i) => Match::Int(i),
+                                         Value::Boolean(b) => Match::Boolean(b),
+                                         Value::Str(s) => Match::Str(s),
+                                         Value::OwnedStr(ref s) => Match::OwnedStr(s.clone()),
+                                     }
+                                 })
+                                 .collect();
+        if let Ok(Some(_)) = self.find(&ms) {
+            return Ok(true);
+        }
+
+        try!(self.values.insert(&vals));
+        self.stats.inserts += 1;
+        let cur_id = self.values.next_id() - 1;
+        for index_and_val in self.indices.iter_mut().zip(vals.iter()) {
+            let (i, v) = index_and_val;
+            i.insert(v, cur_id);
+        }
+        Ok(false)
+    }
+
     fn get_by_ids(&self, ids: &[usize]) -> MatchResults {
         let mut out: Vec<&[Value]> = Vec::new();
         let w = self.values.width();
@@ -157,7 +184,7 @@ impl<'b> Bucket<'b> {
             if let &Match::Any = match_ {
                 continue;
             }
-            if let Some(t) = idx.get_matching_index(match_) {
+            if let Some(t) = idx.get_match_index(match_) {
                 indices_to_match.push(t);
             } else {
                 return Ok(None);
@@ -176,8 +203,8 @@ impl<'b> Bucket<'b> {
 
         let init = indices_to_match[0].clone();
         let matches: RoaringBitmap<usize> = indices_to_match.iter()
-                                                                .skip(1)
-                                                                .fold(init, |acc, &i| acc & i);
+                                                            .skip(1)
+                                                            .fold(init, |acc, &i| acc & i);
         // println!("out length {}", matches.len());
         if matches.len() == 0 {
             return Ok(None);
@@ -209,7 +236,7 @@ impl<'b> Bucket<'b> {
 
     fn walk_pattern<'a>(&self, pattern: &Pattern<'a>) -> Result<RoaringBitmap<usize>, Error> {
         match *pattern {
-            Pattern::Single(refcr, refm) => {
+            Pattern::Single(refcr, refv) => {
                 let &ColumnRef { id: col_id, t: token, r: refcol } = refcr;
                 if self.token != token || col_id >= self.columns.len() {
                     return Err(Error::InvalidColumn);
@@ -226,8 +253,8 @@ impl<'b> Bucket<'b> {
                     return Err(Error::InvalidColumn);
                 }
                 // column and match type should match
-                try!(single_pattern_type_match(refcol, refm));
-                if let Some(b) = self.indices[col_id].get_matching_index(refm) {
+                try!(single_pattern_type_match(refcol, refv));
+                if let Some(b) = self.indices[col_id].get_value_index(refv) {
                     Ok(b.clone())
                 } else {
                     Ok(RoaringBitmap::new())
@@ -323,13 +350,13 @@ fn validate_find_simple_pattern(cols: &Vec<Column>, pattern: &[Match]) -> Result
     Ok(())
 }
 
-fn single_pattern_type_match<'a>(refcol: &Column, refm: &Match<'a>) -> Result<(), Error> {
-    match (refcol, refm) {
-        (&Column::UInt, &Match::UInt(_)) => Ok(()),
-        (&Column::Int, &Match::Int(_)) => Ok(()),
-        (&Column::Boolean, &Match::Boolean(_)) => Ok(()),
-        (&Column::Str, &Match::Str(_)) => Ok(()),
-        (&Column::OwnedStr, &Match::OwnedStr(_)) => Ok(()),
+fn single_pattern_type_match<'a>(refcol: &Column, refv: &Value<'a>) -> Result<(), Error> {
+    match (refcol, refv) {
+        (&Column::UInt, &Value::UInt(_)) => Ok(()),
+        (&Column::Int, &Value::Int(_)) => Ok(()),
+        (&Column::Boolean, &Value::Boolean(_)) => Ok(()),
+        (&Column::Str, &Value::Str(_)) => Ok(()),
+        (&Column::OwnedStr, &Value::OwnedStr(_)) => Ok(()),
         _ => Err(Error::InvalidColumnMatch),
     }
 }
@@ -365,15 +392,21 @@ impl<'a, 'b: 'a> WriteHandle<'a, 'b> {
         self.b.insert(vals)
     }
 
+    pub fn insert_unique(&mut self, vals: Vec<Value<'b>>) -> Result<bool, Error> {
+        self.b.insert_unique(vals)
+    }
+
     pub fn delete<'c>(&mut self, matches: &[Match<'c>]) -> Result<usize, Error> {
         self.b.delete(matches)
     }
 
-    // pub fn delete_pattern<'a>(&self,
-    //                           pattern: &Pattern<'a>)
-    //                           -> Result<usize, Error> {
-    //     unimplemented!()
-    // }
+    pub fn delete_pattern<'c>(&mut self, pattern: &Pattern<'c>) -> Result<usize, Error> {
+        if let Ok(Some(ref ids)) = self.b.find_pattern_internal(pattern) {
+            Ok(self.b.delete_by_ids(ids))
+        } else {
+            Ok(0)
+        }
+    }
 }
 
 impl<'a, 'b: 'a> Deref for WriteHandle<'a, 'b> {
@@ -384,15 +417,15 @@ impl<'a, 'b: 'a> Deref for WriteHandle<'a, 'b> {
     }
 }
 
-pub struct BucketBuilder<'bb> {
-    pub name: &'bb str,
+pub struct BucketBuilder {
+    pub name: String,
     pub columns: Vec<ColumnBuilder>,
 }
 
-impl<'bb> BucketBuilder<'bb> {
-    pub fn new(name: &'bb str) -> Self {
+impl BucketBuilder {
+    pub fn new<T: Into<String>>(name: T) -> Self {
         BucketBuilder {
-            name: name,
+            name: name.into(),
             columns: Vec::new(),
         }
     }

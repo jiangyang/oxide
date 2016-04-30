@@ -10,8 +10,8 @@ mod pattern;
 mod bucket;
 mod cache;
 
-pub use column::{ColumnBuilder};
-pub use value::{Value};
+pub use column::ColumnBuilder;
+pub use value::Value;
 pub use matches::Match;
 pub use pattern::Pattern;
 pub use bucket::{BucketBuilder, ReadHandle, WriteHandle};
@@ -23,6 +23,6 @@ mod test {
 
     #[test]
     fn it_works() {
-      println!("yes!");
+        println!("yes!");
     }
 }

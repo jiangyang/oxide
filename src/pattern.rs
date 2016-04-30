@@ -1,22 +1,22 @@
-use column::{ColumnRef};
-use matches::{Match};
+use column::ColumnRef;
+use value::Value;
 
 #[derive(Debug)]
 pub enum Pattern<'a> {
-    Single(&'a ColumnRef<'a>, &'a Match<'a>),
+    Single(&'a ColumnRef<'a>, &'a Value<'a>),
     And(Box<Pattern<'a>>, Box<Pattern<'a>>),
-    Or(Box<Pattern<'a>>, Box<Pattern<'a>>)
+    Or(Box<Pattern<'a>>, Box<Pattern<'a>>),
 }
 
 impl<'a> Pattern<'a> {
-    pub fn new(refc: &'a ColumnRef<'a>, refm: &'a Match<'a>) -> Pattern<'a> {
-        Pattern::Single(refc, refm)
+    pub fn new(refc: &'a ColumnRef<'a>, refv: &'a Value<'a>) -> Pattern<'a> {
+        Pattern::Single(refc, refv)
     }
-    
-    pub fn and(self, rhs: Pattern<'a>) -> Pattern<'a>  {
+
+    pub fn and(self, rhs: Pattern<'a>) -> Pattern<'a> {
         Pattern::And(Box::new(self), Box::new(rhs))
     }
-    
+
     pub fn or(self, rhs: Pattern<'a>) -> Pattern<'a> {
         Pattern::Or(Box::new(self), Box::new(rhs))
     }

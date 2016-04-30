@@ -21,26 +21,22 @@ fn main() {
     c.bucket_mut(n, |b| {
         let mut b = b.unwrap();
 
-        let vals = vec![
-            Value::Boolean(true),
-            Value::UInt(1),
-            Value::Str(s),
-            Value::OwnedStr(s.to_owned()),
-            Value::Int(99)
-        ];
+        let vals = vec![Value::Boolean(true),
+                        Value::UInt(1),
+                        Value::Str(s),
+                        Value::OwnedStr(s.to_owned()),
+                        Value::Int(99)];
         let r = b.insert(vals);
         match r {
             Ok(_) => println!("inserted 1"),
             Err(e) => println!("{:?}", e),
         };
 
-        let vals = vec![
-            Value::Boolean(false),
-            Value::UInt(2),
-            Value::Str(s),
-            Value::OwnedStr(s.to_owned()),
-            Value::Int(-99)
-        ];
+        let vals = vec![Value::Boolean(false),
+                        Value::UInt(2),
+                        Value::Str(s),
+                        Value::OwnedStr(s.to_owned()),
+                        Value::Int(-99)];
         let r = b.insert(vals);
         match r {
             Ok(_) => println!("inserted 2"),
@@ -48,13 +44,11 @@ fn main() {
         };
 
         s = "bye";
-        let vals = vec![
-            Value::Boolean(true),
-            Value::UInt(3),
-            Value::Str(s),
-            Value::OwnedStr(s.to_owned()),
-            Value::Int(-100)
-        ];
+        let vals = vec![Value::Boolean(true),
+                        Value::UInt(3),
+                        Value::Str(s),
+                        Value::OwnedStr(s.to_owned()),
+                        Value::Int(-100)];
         let r = b.insert(vals);
         match r {
             Ok(_) => println!("inserted 3"),
@@ -70,32 +64,24 @@ fn main() {
             let c4 = b.get_column_ref(3).unwrap();
             let c5 = b.get_column_ref(4).unwrap();
 
-            let m1_1 = Match::Boolean(true);
-            let m1_2 = Match::Boolean(false);
+            let m1_1 = Value::Boolean(true);
+            let m1_2 = Value::Boolean(false);
 
-            let m2_1 = Match::UInt(1);
-            let m2_2 = Match::UInt(2);
+            let m2_1 = Value::UInt(1);
+            let m2_2 = Value::UInt(2);
 
-            let m3 = Match::Str("hi");
+            let m3 = Value::Str("hi");
 
-            // let m4 = Match::OwnedStr("hi".to_owned());
-            let m4 = Match::Any;
 
-            let m5_1 = Match::Int(-99);
-            let m5_2 = Match::Int(99);
+            let m5_1 = Value::Int(-99);
+            let m5_2 = Value::Int(99);
 
             let my_pattern = (Pattern::new(&c1, &m1_1).or(Pattern::new(&c1, &m1_2)))
                                  .and(Pattern::new(&c2, &m2_1).or(Pattern::new(&c2, &m2_2)))
                                  .and(Pattern::new(&c3, &m3))
-                                 // TODO: better design to avoid this?
-                                 // .and(Pattern::new(&c4, &m4))
                                  .and(Pattern::new(&c5, &m5_1).or(Pattern::new(&c5, &m5_2)));
 
             println!("{:?}", my_pattern);
-
-            let x = b.find_pattern(&my_pattern);
-
-            println!("{:?}", x);
 
             if let Some(res) = b.find_pattern(&my_pattern).unwrap() {
                 println!("result is empty ? {}", res.is_empty());

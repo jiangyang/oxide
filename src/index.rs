@@ -72,13 +72,24 @@ impl<'a> Index<'a> {
         }
     }
 
-    pub fn get_matching_index(&self, pattern: &Match) -> Option<&RoaringBitmap<usize>> {
+    pub fn get_match_index(&self, pattern: &Match) -> Option<&RoaringBitmap<usize>> {
         match (self, pattern) {
             (&Index::UInt(ref m), &Match::UInt(u)) => m.get(&u),
             (&Index::Int(ref m), &Match::Int(i)) => m.get(&(i as usize)),
             (&Index::Boolean(ref m), &Match::Boolean(tf)) => m.get(&tf),
             (&Index::Str(ref m), &Match::Str(s)) => m.get(s),
             (&Index::OwnedStr(ref m), &Match::OwnedStr(ref s)) => m.get(s),
+            _ => unreachable!(),
+        }
+    }
+
+    pub fn get_value_index<'b>(&self, pattern: &Value<'b>) -> Option<&RoaringBitmap<usize>> {
+        match (self, pattern) {
+            (&Index::UInt(ref m), &Value::UInt(u)) => m.get(&u),
+            (&Index::Int(ref m), &Value::Int(i)) => m.get(&(i as usize)),
+            (&Index::Boolean(ref m), &Value::Boolean(tf)) => m.get(&tf),
+            (&Index::Str(ref m), &Value::Str(s)) => m.get(s),
+            (&Index::OwnedStr(ref m), &Value::OwnedStr(ref s)) => m.get(s),
             _ => unreachable!(),
         }
     }
@@ -91,9 +102,7 @@ impl<'a> Index<'a> {
             &Index::Str(ref m) => m.len(),
             &Index::OwnedStr(ref m) => m.len(),
         };
-        IndexStats {
-            cardinality: c,
-        }
+        IndexStats { cardinality: c }
     }
 }
 

@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 
 use errs::Error;
-use matches::{MatchResults};
 use bucket::{BucketBuilder, Bucket, ReadHandle, WriteHandle, BucketStats};
 
 #[derive(Debug)]
@@ -14,14 +13,12 @@ pub struct CacheStats {
 }
 
 pub struct Cache<'c> {
-    buckets: HashMap<&'c str, Bucket<'c>>,
+    buckets: HashMap<String, Bucket<'c>>,
 }
 
 impl<'c> Cache<'c> {
     pub fn new() -> Self {
-        Cache {
-            buckets: HashMap::new(),
-        }
+        Cache { buckets: HashMap::new() }
     }
 
     pub fn stats(&self) -> CacheStats {
@@ -30,7 +27,7 @@ impl<'c> Cache<'c> {
             columns: 0,
             inserts: 0,
             deletes: 0,
-            rows: 0
+            rows: 0,
         };
         for (name, bucket) in self.buckets.iter() {
             let bs = bucket.stats();
@@ -43,7 +40,7 @@ impl<'c> Cache<'c> {
         s
     }
 
-    pub fn new_bucket(&mut self, bb: BucketBuilder<'c>) -> Result<(), Error> {
+    pub fn new_bucket(&mut self, bb: BucketBuilder) -> Result<(), Error> {
         let name = bb.name;
         let rb = Bucket::new(bb.columns);
         match rb {
@@ -55,20 +52,28 @@ impl<'c> Cache<'c> {
         }
     }
 
-    pub fn bucket<F>(&self, bucket_name: &str, closure: F) where F: FnOnce(Option<ReadHandle>) {
+    pub fn bucket<F>(&self, bucket_name: &str, closure: F)
+        where F: FnOnce(Option<ReadHandle>)
+    {
         match self.buckets.get(bucket_name) {
             Some(b) => closure(Some(ReadHandle::new(b))),
             _ => closure(None),
         }
     }
 
-    pub fn bucket_mut<F>(&mut self, bucket_name: &str, closure: F) where F: FnOnce(Option<WriteHandle>) {
+    pub fn bucket_mut<F>(&mut self, bucket_name: &str, closure: F)
+        where F: FnOnce(Option<WriteHandle>)
+    {
         match self.buckets.get_mut(bucket_name) {
             Some(b) => {
                 b.write().unwrap();
                 closure(Some(WriteHandle::new(b)))
-            },
+            }
             _ => closure(None),
         }
+    }
+
+    pub fn drop_bucket(&mut self, bucket_name: &str) {
+        self.buckets.remove(bucket_name);
     }
 }
