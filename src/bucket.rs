@@ -1,6 +1,7 @@
 extern crate roaring;
 use roaring::RoaringBitmap;
 
+use std::fmt;
 use std::ops::Deref;
 use std::slice::IterMut;
 use std::sync::{Mutex, LockResult, MutexGuard};
@@ -20,6 +21,21 @@ pub struct BucketStats {
     pub deletes: usize,
     pub rows: usize,
     pub index_stats: Vec<IndexStats>,
+}
+
+impl fmt::Display for BucketStats {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        try!(writeln!(f, "-----------------------------------"));
+        try!(writeln!(f, "columns: {:>}", self.columns));
+        try!(writeln!(f, "inserts: {:>}", self.inserts));
+        try!(writeln!(f, "deletes: {:>}", self.deletes));
+        try!(writeln!(f, "rows   : {:>}", self.rows));
+        try!(writeln!(f, "---------------Indices-------------"));
+        for i in self.index_stats.iter() {
+            try!(write!(f, "{}", i));
+        }
+        write!(f, "")
+    }
 }
 
 pub struct Bucket<'b> {

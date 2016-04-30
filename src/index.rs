@@ -3,6 +3,7 @@ use roaring::RoaringBitmap;
 
 use std::cmp::Eq;
 use std::collections::HashMap;
+use std::fmt;
 use std::hash::Hash;
 
 use column::Column;
@@ -12,6 +13,12 @@ use matches::Match;
 #[derive(Debug)]
 pub struct IndexStats {
     pub cardinality: usize,
+}
+
+impl fmt::Display for IndexStats {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        writeln!(f, "cardinality: {}", self.cardinality)
+    }
 }
 
 #[derive(Debug)]

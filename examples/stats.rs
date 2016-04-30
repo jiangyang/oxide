@@ -27,5 +27,22 @@ fn main() {
         w.insert(vec![Value::Boolean(true), Value::UInt(3), Value::Str(s)]).unwrap();
 
     });
-    println!("{:?}", c.stats());
+
+    {
+        let mut bb = oxide::BucketBuilder::new("b2");
+        bb = bb.add_column(oxide::ColumnBuilder::UInt);
+        bb = bb.add_column(oxide::ColumnBuilder::Boolean);
+        c.new_bucket(bb).unwrap();
+    };
+
+    c.bucket_mut("b2", |w| {
+        let mut w = w.unwrap();
+        w.insert(vec![Value::UInt(1), Value::Boolean(true)]).unwrap();
+        w.insert(vec![Value::UInt(2), Value::Boolean(true)]).unwrap();
+        w.insert(vec![Value::UInt(3), Value::Boolean(true)]).unwrap();
+        w.insert(vec![Value::UInt(4), Value::Boolean(true)]).unwrap();
+        w.insert(vec![Value::UInt(5), Value::Boolean(true)]).unwrap();
+    });
+
+    println!("{}", c.stats());
 }

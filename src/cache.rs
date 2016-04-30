@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::fmt;
 
 use errs::Error;
 use bucket::{BucketBuilder, Bucket, ReadHandle, WriteHandle, BucketStats};
@@ -10,6 +11,23 @@ pub struct CacheStats {
     inserts: usize,
     deletes: usize,
     rows: usize,
+}
+
+impl fmt::Display for CacheStats {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        for (name, bstats) in self.buckets.iter() {
+            try!(writeln!(f, "==================================="));
+            try!(writeln!(f, "{}", name));
+            try!(write!(f, "{}", bstats));
+        }
+        try!(writeln!(f, "==================================="));
+        try!(writeln!(f, "total buckets: {:>}", self.buckets.len()));
+        try!(writeln!(f, "total columns: {:>}", self.columns));
+        try!(writeln!(f, "total inserts: {:>}", self.inserts));
+        try!(writeln!(f, "total deletes: {:>}", self.deletes));
+        try!(writeln!(f, "total rows   : {:>}", self.rows));
+        writeln!(f, "===================================")
+    }
 }
 
 pub struct Cache<'c> {
@@ -50,6 +68,10 @@ impl<'c> Cache<'c> {
             }
             Err(e) => Err(e),
         }
+    }
+
+    pub fn has_bucket(&self, bucket_name: &str) -> bool {
+        self.buckets.contains_key(bucket_name)
     }
 
     pub fn bucket<F>(&self, bucket_name: &str, closure: F)
