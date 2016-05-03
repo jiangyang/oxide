@@ -10,6 +10,7 @@ pub enum Error {
     WrongValueType(usize),
     WrongNumberOfMatches(usize, usize),
     WrongMatchType(usize),
+    NothingToMatch,
 }
 
 impl fmt::Display for Error {
@@ -38,6 +39,9 @@ impl fmt::Display for Error {
             },
             Error::WrongMatchType(idx) => {
                 write!(f, "wrong match type at column index: {}", idx)
+            },
+            Error::NothingToMatch => {
+                write!(f, "nothing to match, perhaps try some match that is not Any ?")
             },
         }
     }

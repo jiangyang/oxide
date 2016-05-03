@@ -1,6 +1,6 @@
 use token::Token;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Column {
     UInt,
     Int,
@@ -19,8 +19,8 @@ pub enum ColumnBuilder {
 }
 
 #[derive(Debug)]
-pub struct ColumnRef<'a> {
+pub struct ColumnRef {
     pub id: usize,
     pub t: Token,
-    pub r: &'a Column,
+    pub r: Column,
 }

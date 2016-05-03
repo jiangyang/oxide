@@ -86,6 +86,11 @@ impl<'b> Bucket<'b> {
         Ok(b)
     }
 
+    pub fn rows(&self) -> usize {
+        let all: RoaringBitmap<usize> = (0..self.values.rows()).collect();
+        (all ^ &self.deleted).len()
+    }
+
     pub fn stats(&self) -> BucketStats {
         let mut is = Vec::<IndexStats>::new();
         for i in self.indices.iter() {
@@ -105,19 +110,20 @@ impl<'b> Bucket<'b> {
     }
 
     pub fn find<'a>(&self, matches: &[Match<'a>]) -> Result<Option<MatchResults>, Error> {
-        if let Ok(Some(ref ids)) = self.find_id(matches) {
+        let found = try!(self.find_id(matches));
+        if let Some(ref ids) = found {
             Ok(Some(self.get_by_ids(ids)))
         } else {
             Ok(None)
         }
     }
 
-    pub fn get_column_ref(&'b self, col_num: usize) -> Option<ColumnRef<'b>> {
+    pub fn get_column_ref(&self, col_num: usize) -> Option<ColumnRef> {
         if col_num < self.columns.len() {
             Some(ColumnRef {
                 id: col_num,
                 t: self.token,
-                r: &(self.columns[col_num]),
+                r: self.columns[col_num].clone()
             })
         } else {
             None
@@ -158,7 +164,7 @@ impl<'b> Bucket<'b> {
                                  })
                                  .collect();
         if let Ok(Some(_)) = self.find(&ms) {
-            return Ok(true);
+            return Ok(false);
         }
 
         try!(self.values.insert(&vals));
@@ -168,7 +174,7 @@ impl<'b> Bucket<'b> {
             let (i, v) = index_and_val;
             i.insert(v, cur_id);
         }
-        Ok(false)
+        Ok(true)
     }
 
     fn get_by_ids(&self, ids: &[usize]) -> MatchResults {
@@ -179,7 +185,7 @@ impl<'b> Bucket<'b> {
             // println!("id {} is in the result", id);
             out.push(self.values.slice_at(id * w, id * w + w));
         }
-        MatchResults { data: out }
+        MatchResults::new(out)
     }
 
     fn delete_by_ids(&mut self, ids: &[usize]) -> usize {
@@ -253,19 +259,8 @@ impl<'b> Bucket<'b> {
     fn walk_pattern<'a>(&self, pattern: &Pattern<'a>) -> Result<RoaringBitmap<usize>, Error> {
         match *pattern {
             Pattern::Single(refcr, refv) => {
-                let &ColumnRef { id: col_id, t: token, r: refcol } = refcr;
+                let &ColumnRef { id: col_id, t: token, r: ref refcol } = refcr;
                 if self.token != token || col_id >= self.columns.len() {
-                    return Err(Error::InvalidColumnRef);
-                }
-                // should ref a column in this bucket
-                let mut found = false;
-                for refcol_ in self.columns.iter() {
-                    if refcol_ as *const Column == refcol as *const Column {
-                        found = true;
-                        break;
-                    }
-                }
-                if !found {
                     return Err(Error::InvalidColumnRef);
                 }
                 // column and match type should match
@@ -354,12 +349,20 @@ fn match_simple_type_eq(l: &Column, r: &Match) -> bool {
     }
 }
 
-fn validate_find_simple_pattern(cols: &Vec<Column>, pattern: &[Match]) -> Result<(), Error> {
-    if cols.len() != pattern.len() {
-        return Err(Error::WrongNumberOfMatches(cols.len(), pattern.len()));
+fn validate_find_simple_pattern(cols: &Vec<Column>, matches: &[Match]) -> Result<(), Error> {
+    if cols.len() != matches.len() {
+        return Err(Error::WrongNumberOfMatches(cols.len(), matches.len()));
+    }
+    if let None = matches.iter().find(|m| {
+        match m {
+            &&Match::Any => false,
+            _ => true
+        }
+    }) {
+        return Err(Error::NothingToMatch);
     }
     for (i, col) in cols.iter().enumerate() {
-        if !match_simple_type_eq(&col, &pattern[i]) {
+        if !match_simple_type_eq(&col, &matches[i]) {
             return Err(Error::WrongMatchType(i));
         }
     }

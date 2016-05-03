@@ -16,3 +16,4 @@ pub use matches::Match;
 pub use pattern::Pattern;
 pub use bucket::{BucketBuilder, ReadHandle, WriteHandle};
 pub use cache::Cache;
+pub use errs::Error;

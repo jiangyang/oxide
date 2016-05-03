@@ -3,13 +3,13 @@ use value::Value;
 
 #[derive(Debug)]
 pub enum Pattern<'a> {
-    Single(&'a ColumnRef<'a>, &'a Value<'a>),
+    Single(&'a ColumnRef, &'a Value<'a>),
     And(Box<Pattern<'a>>, Box<Pattern<'a>>),
     Or(Box<Pattern<'a>>, Box<Pattern<'a>>),
 }
 
 impl<'a> Pattern<'a> {
-    pub fn new(refc: &'a ColumnRef<'a>, refv: &'a Value<'a>) -> Pattern<'a> {
+    pub fn new(refc: &'a ColumnRef, refv: &'a Value<'a>) -> Pattern<'a> {
         Pattern::Single(refc, refv)
     }
 

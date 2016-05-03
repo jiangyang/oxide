@@ -41,4 +41,8 @@ impl<'v> ValueStore<'v> {
         self.next_id += 1;
         Ok(())
     }
+
+    pub fn rows(&self) -> usize {
+        self.vals.len() / self.width
+    }
 }
