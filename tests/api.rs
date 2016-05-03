@@ -67,7 +67,7 @@ fn insert() {
             assert!(false);
         }
         let mut w = w.unwrap();
-        
+
         use oxide::Value;
         // wrong number of things
         let v0 = vec![];
@@ -95,14 +95,22 @@ fn insert() {
         }
 
         // wrong type of things
-        let v3 = vec![Value::Int(1), Value::UInt(2), Value::Boolean(false), Value::Boolean(true), Value::Boolean(false)];
+        let v3 = vec![Value::Int(1),
+                      Value::UInt(2),
+                      Value::Boolean(false),
+                      Value::Boolean(true),
+                      Value::Boolean(false)];
         if let Err(oxide::Error::WrongValueType(i)) = w.insert(v3) {
             assert_eq!(3, i);
         } else {
             assert!(false);
         }
 
-        let v4 = vec![Value::Int(1), Value::UInt(2), Value::Boolean(false), Value::Str("foo"), Value::OwnedStr("boo".to_owned())];
+        let v4 = vec![Value::Int(1),
+                      Value::UInt(2),
+                      Value::Boolean(false),
+                      Value::Str("foo"),
+                      Value::OwnedStr("boo".to_owned())];
         if let Ok(()) = w.insert(v4) {
             assert_eq!(1, w.rows());
             let stats = w.stats();
@@ -118,7 +126,11 @@ fn insert() {
             assert!(false);
         }
 
-        let v4 = vec![Value::Int(2), Value::UInt(3), Value::Boolean(true), Value::Str("foo"), Value::OwnedStr("boo".to_owned())];
+        let v4 = vec![Value::Int(2),
+                      Value::UInt(3),
+                      Value::Boolean(true),
+                      Value::Str("foo"),
+                      Value::OwnedStr("boo".to_owned())];
         if let Ok(()) = w.insert(v4) {
             assert_eq!(2, w.rows());
             let stats = w.stats();
@@ -180,7 +192,7 @@ fn insert_unique() {
             assert!(false);
         }
         let mut w = w.unwrap();
-        
+
         use oxide::Value;
         // wrong number of things
         let v0 = vec![];
@@ -208,14 +220,22 @@ fn insert_unique() {
         }
 
         // wrong type of things
-        let v3 = vec![Value::Int(1), Value::UInt(2), Value::Boolean(false), Value::Boolean(true), Value::Boolean(false)];
+        let v3 = vec![Value::Int(1),
+                      Value::UInt(2),
+                      Value::Boolean(false),
+                      Value::Boolean(true),
+                      Value::Boolean(false)];
         if let Err(oxide::Error::WrongValueType(i)) = w.insert_unique(v3) {
             assert_eq!(3, i);
         } else {
             assert!(false);
         }
 
-        let v4 = vec![Value::Int(1), Value::UInt(2), Value::Boolean(false), Value::Str("foo"), Value::OwnedStr("boo".to_owned())];
+        let v4 = vec![Value::Int(1),
+                      Value::UInt(2),
+                      Value::Boolean(false),
+                      Value::Str("foo"),
+                      Value::OwnedStr("boo".to_owned())];
         if let Ok(true) = w.insert_unique(v4) {
             assert_eq!(1, w.rows());
             let stats = w.stats();
@@ -231,7 +251,11 @@ fn insert_unique() {
             assert!(false);
         }
 
-        let v4 = vec![Value::Int(2), Value::UInt(3), Value::Boolean(true), Value::Str("foo"), Value::OwnedStr("boo".to_owned())];
+        let v4 = vec![Value::Int(2),
+                      Value::UInt(3),
+                      Value::Boolean(true),
+                      Value::Str("foo"),
+                      Value::OwnedStr("boo".to_owned())];
         if let Ok(true) = w.insert_unique(v4) {
             assert_eq!(2, w.rows());
             let stats = w.stats();
@@ -250,7 +274,11 @@ fn insert_unique() {
             assert!(false);
         }
 
-        let v5 = vec![Value::Int(2), Value::UInt(3), Value::Boolean(true), Value::Str("foo"), Value::OwnedStr("boo".to_owned())];
+        let v5 = vec![Value::Int(2),
+                      Value::UInt(3),
+                      Value::Boolean(true),
+                      Value::Str("foo"),
+                      Value::OwnedStr("boo".to_owned())];
         if let Ok(false) = w.insert_unique(v5) {
             assert_eq!(2, w.rows());
             let stats = w.stats();
@@ -310,10 +338,30 @@ fn find() {
     c.bucket_mut(n, |w| {
         let mut w = w.unwrap();
         use oxide::Value;
-        w.insert(vec![Value::Int(-1), Value::UInt(1), Value::Boolean(false), Value::Str("a"), Value::OwnedStr("b".to_owned())]).unwrap();
-        w.insert(vec![Value::Int(-2), Value::UInt(2), Value::Boolean(true), Value::Str("b"), Value::OwnedStr("a".to_owned())]).unwrap();
-        w.insert(vec![Value::Int(-3), Value::UInt(3), Value::Boolean(false), Value::Str("a"), Value::OwnedStr("b".to_owned())]).unwrap();        
-        w.insert(vec![Value::Int(-1), Value::UInt(4), Value::Boolean(false), Value::Str("b"), Value::OwnedStr("a".to_owned())]).unwrap();
+        w.insert(vec![Value::Int(-1),
+                      Value::UInt(1),
+                      Value::Boolean(false),
+                      Value::Str("a"),
+                      Value::OwnedStr("b".to_owned())])
+         .unwrap();
+        w.insert(vec![Value::Int(-2),
+                      Value::UInt(2),
+                      Value::Boolean(true),
+                      Value::Str("b"),
+                      Value::OwnedStr("a".to_owned())])
+         .unwrap();
+        w.insert(vec![Value::Int(-3),
+                      Value::UInt(3),
+                      Value::Boolean(false),
+                      Value::Str("a"),
+                      Value::OwnedStr("b".to_owned())])
+         .unwrap();
+        w.insert(vec![Value::Int(-1),
+                      Value::UInt(4),
+                      Value::Boolean(false),
+                      Value::Str("b"),
+                      Value::OwnedStr("a".to_owned())])
+         .unwrap();
     });
 
     c.bucket(n, |r| {
@@ -350,7 +398,11 @@ fn find() {
         }
 
         // wrong type of things
-        let v3 = vec![Match::Int(1), Match::UInt(2), Match::Boolean(false), Match::Boolean(true), Match::Boolean(false)];
+        let v3 = vec![Match::Int(1),
+                      Match::UInt(2),
+                      Match::Boolean(false),
+                      Match::Boolean(true),
+                      Match::Boolean(false)];
         if let Err(oxide::Error::WrongMatchType(i)) = r.find(&v3) {
             assert_eq!(3, i);
         } else {
@@ -365,7 +417,11 @@ fn find() {
         }
 
         // match 0
-        let v4 = vec![Match::Int(-1), Match::UInt(2), Match::Boolean(false), Match::Str("c"), Match::OwnedStr("c".to_owned())];
+        let v4 = vec![Match::Int(-1),
+                      Match::UInt(2),
+                      Match::Boolean(false),
+                      Match::Str("c"),
+                      Match::OwnedStr("c".to_owned())];
         if let Ok(None) = r.find(&v4) {
             assert!(true);
         } else {
@@ -373,7 +429,11 @@ fn find() {
         }
 
         // match 1
-        let v4 = vec![Match::Int(-1), Match::UInt(4), Match::Boolean(false), Match::Str("b"), Match::OwnedStr("a".to_owned())];
+        let v4 = vec![Match::Int(-1),
+                      Match::UInt(4),
+                      Match::Boolean(false),
+                      Match::Str("b"),
+                      Match::OwnedStr("a".to_owned())];
         if let Ok(Some(res)) = r.find(&v4) {
             assert_eq!(1, res.len());
         } else {
@@ -389,7 +449,7 @@ fn find() {
         }
 
         // pattern
-        {   
+        {
             use oxide::Value;
             use oxide::Pattern;
 
@@ -412,12 +472,12 @@ fn find() {
             let m4 = Value::Str("b");
 
             let m5 = Value::OwnedStr("a".to_owned());
-            
+
             // invalid pattern, type mis-match
             let my_pattern = (Pattern::new(&c1, &m1_1).or(Pattern::new(&c1, &m1_2)))
-                     .and(Pattern::new(&c2, &m2_1).or(Pattern::new(&c2, &m2_2)))
-                     .and(Pattern::new(&c3, &m4))
-                     .and(Pattern::new(&c5, &m5));
+                                 .and(Pattern::new(&c2, &m2_1).or(Pattern::new(&c2, &m2_2)))
+                                 .and(Pattern::new(&c3, &m4))
+                                 .and(Pattern::new(&c5, &m5));
 
             if let Err(oxide::Error::InvalidColumnMatch) = r.find_pattern(&my_pattern) {
                 assert!(true);
@@ -478,15 +538,39 @@ fn delete() {
     c.bucket_mut(n, |w| {
         let mut w = w.unwrap();
         use oxide::Value;
-        w.insert(vec![Value::Int(-1), Value::UInt(1), Value::Boolean(false), Value::Str("a"), Value::OwnedStr("b".to_owned())]).unwrap();
-        w.insert(vec![Value::Int(-2), Value::UInt(2), Value::Boolean(true), Value::Str("b"), Value::OwnedStr("a".to_owned())]).unwrap();
-        w.insert(vec![Value::Int(-3), Value::UInt(3), Value::Boolean(false), Value::Str("a"), Value::OwnedStr("b".to_owned())]).unwrap();        
-        w.insert(vec![Value::Int(-1), Value::UInt(4), Value::Boolean(false), Value::Str("b"), Value::OwnedStr("a".to_owned())]).unwrap();
+        w.insert(vec![Value::Int(-1),
+                      Value::UInt(1),
+                      Value::Boolean(false),
+                      Value::Str("a"),
+                      Value::OwnedStr("b".to_owned())])
+         .unwrap();
+        w.insert(vec![Value::Int(-2),
+                      Value::UInt(2),
+                      Value::Boolean(true),
+                      Value::Str("b"),
+                      Value::OwnedStr("a".to_owned())])
+         .unwrap();
+        w.insert(vec![Value::Int(-3),
+                      Value::UInt(3),
+                      Value::Boolean(false),
+                      Value::Str("a"),
+                      Value::OwnedStr("b".to_owned())])
+         .unwrap();
+        w.insert(vec![Value::Int(-1),
+                      Value::UInt(4),
+                      Value::Boolean(false),
+                      Value::Str("b"),
+                      Value::OwnedStr("a".to_owned())])
+         .unwrap();
 
         use oxide::Match;
 
         // match 1
-        let v = vec![Match::Int(-1), Match::UInt(4), Match::Boolean(false), Match::Str("b"), Match::OwnedStr("a".to_owned())];
+        let v = vec![Match::Int(-1),
+                     Match::UInt(4),
+                     Match::Boolean(false),
+                     Match::Str("b"),
+                     Match::OwnedStr("a".to_owned())];
         if let Ok(n) = w.delete(&v) {
             assert_eq!(1, n);
             assert_eq!(3, w.rows());
@@ -528,10 +612,30 @@ fn delete_pattern() {
     c.bucket_mut(n, |w| {
         let mut w = w.unwrap();
         use oxide::Value;
-        w.insert(vec![Value::Int(-1), Value::UInt(1), Value::Boolean(false), Value::Str("a"), Value::OwnedStr("b".to_owned())]).unwrap();
-        w.insert(vec![Value::Int(-2), Value::UInt(2), Value::Boolean(true), Value::Str("b"), Value::OwnedStr("a".to_owned())]).unwrap();
-        w.insert(vec![Value::Int(-3), Value::UInt(3), Value::Boolean(false), Value::Str("a"), Value::OwnedStr("b".to_owned())]).unwrap();        
-        w.insert(vec![Value::Int(-1), Value::UInt(4), Value::Boolean(false), Value::Str("b"), Value::OwnedStr("a".to_owned())]).unwrap();
+        w.insert(vec![Value::Int(-1),
+                      Value::UInt(1),
+                      Value::Boolean(false),
+                      Value::Str("a"),
+                      Value::OwnedStr("b".to_owned())])
+         .unwrap();
+        w.insert(vec![Value::Int(-2),
+                      Value::UInt(2),
+                      Value::Boolean(true),
+                      Value::Str("b"),
+                      Value::OwnedStr("a".to_owned())])
+         .unwrap();
+        w.insert(vec![Value::Int(-3),
+                      Value::UInt(3),
+                      Value::Boolean(false),
+                      Value::Str("a"),
+                      Value::OwnedStr("b".to_owned())])
+         .unwrap();
+        w.insert(vec![Value::Int(-1),
+                      Value::UInt(4),
+                      Value::Boolean(false),
+                      Value::Str("b"),
+                      Value::OwnedStr("a".to_owned())])
+         .unwrap();
 
         use oxide::Pattern;
 
@@ -553,7 +657,7 @@ fn delete_pattern() {
         let m4 = Value::Str("b");
 
         let m5 = Value::OwnedStr("a".to_owned());
-        
+
         let my_pattern = (Pattern::new(&c1, &m1_1).or(Pattern::new(&c1, &m1_2)))
                              .and(Pattern::new(&c2, &m2_1).or(Pattern::new(&c2, &m2_2)))
                              .and(Pattern::new(&c3, &m3_1).or(Pattern::new(&c3, &m3_2)))

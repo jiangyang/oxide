@@ -123,7 +123,7 @@ impl<'b> Bucket<'b> {
             Some(ColumnRef {
                 id: col_num,
                 t: self.token,
-                r: self.columns[col_num].clone()
+                r: self.columns[col_num].clone(),
             })
         } else {
             None
@@ -356,7 +356,7 @@ fn validate_find_simple_pattern(cols: &Vec<Column>, matches: &[Match]) -> Result
     if let None = matches.iter().find(|m| {
         match m {
             &&Match::Any => false,
-            _ => true
+            _ => true,
         }
     }) {
         return Err(Error::NothingToMatch);
