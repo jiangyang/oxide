@@ -55,45 +55,36 @@ fn main() {
             Err(e) => println!("{:?}", e),
         };
 
-        // borrow cache in the scope for pattern
-        // because columnRef borrows the cache
-        {
-            let c1 = b.get_column_ref(0).unwrap();
-            let c2 = b.get_column_ref(1).unwrap();
-            let c3 = b.get_column_ref(2).unwrap();
-            let c4 = b.get_column_ref(3).unwrap();
-            let c5 = b.get_column_ref(4).unwrap();
+        let c1 = b.get_column_ref(0).unwrap();
+        let c2 = b.get_column_ref(1).unwrap();
+        let c3 = b.get_column_ref(2).unwrap();
+        let c4 = b.get_column_ref(3).unwrap();
+        let c5 = b.get_column_ref(4).unwrap();
 
-            let m1_1 = Value::Boolean(true);
-            let m1_2 = Value::Boolean(false);
+        let m1_1 = Value::Boolean(true);
+        let m1_2 = Value::Boolean(false);
 
-            let m2_1 = Value::UInt(1);
-            let m2_2 = Value::UInt(2);
+        let m2_1 = Value::UInt(1);
+        let m2_2 = Value::UInt(2);
 
-            let m3 = Value::Str("hi");
+        let m3 = Value::Str("hi");
 
 
-            let m5_1 = Value::Int(-99);
-            let m5_2 = Value::Int(99);
+        let m5_1 = Value::Int(-99);
+        let m5_2 = Value::Int(99);
 
-            let my_pattern = (Pattern::new(&c1, &m1_1).or(Pattern::new(&c1, &m1_2)))
-                                 .and(Pattern::new(&c2, &m2_1).or(Pattern::new(&c2, &m2_2)))
-                                 .and(Pattern::new(&c3, &m3))
-                                 .and(Pattern::new(&c5, &m5_1).or(Pattern::new(&c5, &m5_2)));
+        let my_pattern = (Pattern::new(&c1, &m1_1).or(Pattern::new(&c1, &m1_2)))
+                             .and(Pattern::new(&c2, &m2_1).or(Pattern::new(&c2, &m2_2)))
+                             .and(Pattern::new(&c3, &m3))
+                             .and(Pattern::new(&c5, &m5_1).or(Pattern::new(&c5, &m5_2)));
 
-            println!("{:?}", my_pattern);
-
-            if let Some(res) = b.find_pattern(&my_pattern).unwrap() {
-                println!("result is empty ? {}", res.is_empty());
-                println!("result length is {}", res.len());
-
-                for r in res.iter() {
-                    print!("row: ");
-                    for f in r.iter() {
-                        print!(" {:?} ", f)
-                    }
-                    print!("\n");
+        if let Some(res) = b.find_pattern(&my_pattern).unwrap() {
+            for r in res.iter() {
+                print!("row: ");
+                for f in r.iter() {
+                    print!(" {} ", f)
                 }
+                print!("\n");
             }
         }
     });

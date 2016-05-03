@@ -1,3 +1,5 @@
+use std::fmt;
+
 use errs::Error;
 
 #[derive(Clone, Debug)]
@@ -7,6 +9,18 @@ pub enum Value<'a> {
     Boolean(bool),
     Str(&'a str),
     OwnedStr(String),
+}
+
+impl<'a> fmt::Display for Value<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            &Value::UInt(u) => write!(f, "{}", u),
+            &Value::Int(i) => write!(f, "{}", i),
+            &Value::Boolean(b) => write!(f, "{}", b),
+            &Value::Str(s) => write!(f, "{}", s),
+            &Value::OwnedStr(ref s) => write!(f, "{}", s),
+        }
+    }
 }
 
 pub struct ValueStore<'v> {

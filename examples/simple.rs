@@ -61,13 +61,10 @@ fn main() {
                      Match::OwnedStr("yes".to_string())];
 
         if let Some(res) = w.find(&m).unwrap() {
-            println!("result is empty ? {}", res.is_empty());
-            println!("result length is {}", res.len());
-
             for r in res.iter() {
-                print!("row: ");
+                print!("row:");
                 for f in r.iter() {
-                    print!(" {:?} ", f)
+                    print!(" {} ", f)
                 }
                 print!("\n");
             }
@@ -100,13 +97,10 @@ fn main() {
         let b = r.unwrap();
 
         if let Some(res) = b.find(&p).unwrap() {
-            println!("result is empty ? {}", res.is_empty());
-            println!("result length is {}", res.len());
-
             for r in res.iter() {
-                print!("row: ");
+                print!("row:");
                 for f in r.iter() {
-                    print!(" {:?} ", f)
+                    print!(" {} ", f)
                 }
                 print!("\n");
             }
