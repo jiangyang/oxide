@@ -1,5 +1,5 @@
+#[macro_use]
 extern crate oxide;
-use oxide::Value;
 use oxide::Match;
 
 fn main() {
@@ -34,31 +34,19 @@ fn main() {
     let mut s = "hi";
     c.bucket_mut(n, |w| {
         let mut w = w.unwrap();
-        let vals = vec![Value::Boolean(true),
-                        Value::UInt(1),
-                        Value::Str(s),
-                        Value::Int(-2),
-                        Value::OwnedStr("yes".to_string())];
+        let vals = vals![true, 1usize, s, -2isize, "yes".to_string()];
         match w.insert(vals) {
             Ok(_) => println!("inserted 1"),
             Err(e) => println!("{:?}", e),
         };
 
-        let vals = vec![Value::Boolean(false),
-                        Value::UInt(2),
-                        Value::Str(s),
-                        Value::Int(-2),
-                        Value::OwnedStr("nope".to_string())];
+        let vals = vals![false, 2usize, s, -2isize, "nope".to_string()];
         match w.insert(vals) {
             Ok(_) => println!("inserted 2"),
             Err(e) => println!("{:?}", e),
         };
 
-        let m = vec![Match::Boolean(true),
-                     Match::Any,
-                     Match::Str("hi"),
-                     Match::Int(-2),
-                     Match::OwnedStr("yes".to_string())];
+        let m = matches![true, Match::Any, "hi", -2isize, "yes".to_string()];
 
         if let Some(res) = w.find(&m).unwrap() {
             for r in res.iter() {
@@ -76,22 +64,14 @@ fn main() {
 
     c.bucket_mut(n, |w| {
         let mut w = w.unwrap();
-        let vals = vec![Value::Boolean(true),
-                        Value::UInt(3),
-                        Value::Str(s),
-                        Value::Int(-3),
-                        Value::OwnedStr("yes".to_string())];
+        let vals = vals![true, 3usize, s, -3isize, "yes".to_string()];
         match w.insert(vals) {
             Ok(_) => println!("inserted 3"),
             Err(e) => println!("{:?}", e),
         };
     });
 
-    let p = vec![Match::Boolean(true),
-                 Match::Any,
-                 Match::Str("hi"),
-                 Match::Any,
-                 Match::OwnedStr("yes".to_string())];
+    let p = matches![true, Match::Any, "hi", Match::Any, "yes".to_string()];
 
     c.bucket(n, |r| {
         let b = r.unwrap();

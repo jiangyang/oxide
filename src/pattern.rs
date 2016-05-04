@@ -1,3 +1,5 @@
+use std::ops;
+
 use column::ColumnRef;
 use value::Value;
 
@@ -18,6 +20,22 @@ impl<'a> Pattern<'a> {
     }
 
     pub fn or(self, rhs: Pattern<'a>) -> Pattern<'a> {
+        Pattern::Or(Box::new(self), Box::new(rhs))
+    }
+}
+
+impl<'a> ops::BitAnd for Pattern<'a> {
+    type Output = Pattern<'a>;
+
+    fn bitand(self, rhs: Pattern<'a>) -> Pattern<'a> {
+        Pattern::And(Box::new(self), Box::new(rhs))
+    }
+}
+
+impl<'a> ops::BitOr for Pattern<'a> {
+    type Output = Pattern<'a>;
+
+    fn bitor(self, rhs: Pattern<'a>) -> Pattern<'a> {
         Pattern::Or(Box::new(self), Box::new(rhs))
     }
 }

@@ -1,6 +1,5 @@
 extern crate oxide;
 use oxide::Value;
-use oxide::Match;
 use oxide::ColumnBuilder;
 use oxide::Pattern;
 
@@ -58,7 +57,7 @@ fn main() {
         let c1 = b.get_column_ref(0).unwrap();
         let c2 = b.get_column_ref(1).unwrap();
         let c3 = b.get_column_ref(2).unwrap();
-        let c4 = b.get_column_ref(3).unwrap();
+        let _c4 = b.get_column_ref(3).unwrap();
         let c5 = b.get_column_ref(4).unwrap();
 
         let m1_1 = Value::Boolean(true);

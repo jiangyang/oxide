@@ -9,6 +9,7 @@ mod matches;
 mod pattern;
 mod bucket;
 mod cache;
+mod macros;
 
 pub use column::ColumnBuilder;
 pub use value::Value;

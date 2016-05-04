@@ -1,3 +1,4 @@
+use std::convert;
 use std::fmt;
 
 use errs::Error;
@@ -58,5 +59,35 @@ impl<'v> ValueStore<'v> {
 
     pub fn rows(&self) -> usize {
         self.vals.len() / self.width
+    }
+}
+
+impl<'a> convert::Into<Value<'a>> for usize {
+    fn into(self) -> Value<'a> {
+        Value::UInt(self)
+    }
+}
+
+impl<'a> convert::Into<Value<'a>> for isize {
+    fn into(self) -> Value<'a> {
+        Value::Int(self)
+    }
+}
+
+impl<'a> convert::Into<Value<'a>> for bool {
+    fn into(self) -> Value<'a> {
+        Value::Boolean(self)
+    }
+}
+
+impl<'a> convert::Into<Value<'a>> for &'a str {
+    fn into(self) -> Value<'a> {
+        Value::Str(self)
+    }
+}
+
+impl<'a> convert::Into<Value<'a>> for String {
+    fn into(self) -> Value<'a> {
+        Value::OwnedStr(self)
     }
 }

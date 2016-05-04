@@ -1,3 +1,4 @@
+use std::convert;
 use std::slice::Iter;
 
 use value::Value;
@@ -34,5 +35,35 @@ impl<'a, 'b: 'a> MatchResults<'a, 'b> {
 
     pub fn iter<'c>(&self) -> Iter<'c, &[Value<'b>]> {
         self.data.iter()
+    }
+}
+
+impl<'a> convert::Into<Match<'a>> for usize {
+    fn into(self) -> Match<'a> {
+        Match::UInt(self)
+    }
+}
+
+impl<'a> convert::Into<Match<'a>> for isize {
+    fn into(self) -> Match<'a> {
+        Match::Int(self)
+    }
+}
+
+impl<'a> convert::Into<Match<'a>> for bool {
+    fn into(self) -> Match<'a> {
+        Match::Boolean(self)
+    }
+}
+
+impl<'a> convert::Into<Match<'a>> for &'a str {
+    fn into(self) -> Match<'a> {
+        Match::Str(self)
+    }
+}
+
+impl<'a> convert::Into<Match<'a>> for String {
+    fn into(self) -> Match<'a> {
+        Match::OwnedStr(self)
     }
 }
