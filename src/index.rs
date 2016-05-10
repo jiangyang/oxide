@@ -1,9 +1,13 @@
+extern crate fnv;
+use fnv::FnvHasher;
+
 extern crate roaring;
 use roaring::RoaringBitmap;
 
 use std::cmp::Eq;
 use std::collections::HashMap;
 use std::fmt;
+use std::hash::BuildHasherDefault;
 use std::hash::Hash;
 
 use column::Column;
@@ -23,22 +27,21 @@ impl fmt::Display for IndexStats {
 
 #[derive(Debug)]
 pub enum Index<'a> {
-    // TODO: use FNV hasher for speed(https://crates.io/crates/fnv)
-    UInt(HashMap<usize, RoaringBitmap<usize>>),
-    Int(HashMap<usize, RoaringBitmap<usize>>),
-    Boolean(HashMap<bool, RoaringBitmap<usize>>),
-    Str(HashMap<&'a str, RoaringBitmap<usize>>),
-    OwnedStr(HashMap<String, RoaringBitmap<usize>>),
+    UInt(HashMap<usize, RoaringBitmap<usize>, BuildHasherDefault<FnvHasher>>),
+    Int(HashMap<usize, RoaringBitmap<usize>, BuildHasherDefault<FnvHasher>>),
+    Boolean(HashMap<bool, RoaringBitmap<usize>, BuildHasherDefault<FnvHasher>>),
+    Str(HashMap<&'a str, RoaringBitmap<usize>, BuildHasherDefault<FnvHasher>>),
+    OwnedStr(HashMap<String, RoaringBitmap<usize>, BuildHasherDefault<FnvHasher>>),
 }
 
 impl<'a> Index<'a> {
     pub fn new_by_column(col: &Column) -> Index<'a> {
         match *col {
-            Column::UInt => Index::UInt(HashMap::new()),
-            Column::Int => Index::Int(HashMap::new()),
-            Column::Boolean => Index::Boolean(HashMap::new()),
-            Column::Str => Index::Str(HashMap::new()),
-            Column::OwnedStr => Index::OwnedStr(HashMap::new()),
+            Column::UInt => Index::UInt(HashMap::default()),
+            Column::Int => Index::Int(HashMap::default()),
+            Column::Boolean => Index::Boolean(HashMap::default()),
+            Column::Str => Index::Str(HashMap::default()),
+            Column::OwnedStr => Index::OwnedStr(HashMap::default()),
         }
     }
 
@@ -113,7 +116,7 @@ impl<'a> Index<'a> {
     }
 }
 
-fn ensure_bitmap<T: Eq + Hash>(m: &mut HashMap<T, RoaringBitmap<usize>>, key: T) {
+fn ensure_bitmap<T: Eq + Hash>(m: &mut HashMap<T, RoaringBitmap<usize>, BuildHasherDefault<FnvHasher>>, key: T) {
     if let None = m.get(&key) {
         let idx: RoaringBitmap<usize> = RoaringBitmap::new();
         m.insert(key, idx);

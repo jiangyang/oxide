@@ -1,3 +1,4 @@
+extern crate fnv;
 extern crate roaring;
 
 mod errs;

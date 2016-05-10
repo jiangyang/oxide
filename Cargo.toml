@@ -4,5 +4,6 @@ version = "0.1.0"
 authors = ["Yang <jiangyangk@gmail.com>"]
 
 [dependencies]
+fnv = "^1.0.0"
 rand = "0.3"
 roaring = { git = "https://github.com/Nemo157/roaring-rs.git" }

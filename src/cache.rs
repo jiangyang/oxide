@@ -1,5 +1,9 @@
+extern crate fnv;
+use fnv::FnvHasher;
+
 use std::collections::HashMap;
 use std::fmt;
+use std::hash::BuildHasherDefault;
 
 use errs::Error;
 use bucket::{BucketBuilder, Bucket, ReadHandle, WriteHandle, BucketStats};
@@ -31,12 +35,12 @@ impl fmt::Display for CacheStats {
 }
 
 pub struct Cache<'c> {
-    buckets: HashMap<String, Bucket<'c>>,
+    buckets: HashMap<String, Bucket<'c>, BuildHasherDefault<FnvHasher>>,
 }
 
 impl<'c> Cache<'c> {
     pub fn new() -> Self {
-        Cache { buckets: HashMap::new() }
+        Cache { buckets: HashMap::default() }
     }
 
     pub fn stats(&self) -> CacheStats {
