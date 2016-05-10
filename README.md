@@ -1,3 +1,5 @@
+[![travis][]]
+
 ## About
 Oxide is a cache like library that stores tabular data values that are indexed with bitmap index, thus allows lookup in the fashion of "columnA = valueA and columnB = valueB". Usually you'd use database and/or SQL, occasionally it is better to do it in memory, hopefully.
 
@@ -69,3 +71,4 @@ Licensed under either of
 
 
 [roaring-rs]: https://github.com/Nemo157/roaring-rs
+[travis]: https://travis-ci.org/jiangyang/oxide.svg?branch=master
